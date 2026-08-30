@@ -1,0 +1,47 @@
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Cairo:wght@200..1000&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply antialiased scroll-smooth;
+  }
+  
+  body {
+    @apply bg-background text-text-main font-cairo transition-colors duration-300;
+  }
+
+  .dark body {
+    @apply bg-background-dark text-text-darkMain;
+  }
+
+  /* Custom Scrollbar for better UI */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-primary/20 rounded-full;
+  }
+  .dark ::-webkit-scrollbar-thumb {
+    @apply bg-primary-dark/50;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary/40;
+  }
+}
+
+@layer components {
+  /* We will build design system components here or in React components */
+  .glass-panel {
+    @apply bg-card/80 backdrop-blur-md border border-white/20 shadow-soft;
+  }
+  .dark .glass-panel {
+    @apply bg-card-dark/80 border-white/5 shadow-soft-dark;
+  }
+}
