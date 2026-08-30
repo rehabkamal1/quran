@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card } from '../components/ui/Card';
-import { Sun, Moon, Star, Shield, Heart } from 'lucide-react';
+import { Sun, Moon, Star, Shield, Heart, Compass, Activity, BookOpen, Bookmark } from 'lucide-react';
 
 import { useNavigate } from 'react-router-dom';
 
@@ -11,8 +11,11 @@ export const Adhkar: React.FC = () => {
     { id: 'morning', title: 'أذكار الصباح', icon: Sun, color: 'text-amber-500 bg-amber-500/10' },
     { id: 'evening', title: 'أذكار المساء', icon: Moon, color: 'text-indigo-500 bg-indigo-500/10' },
     { id: 'sleep', title: 'أذكار النوم', icon: Star, color: 'text-purple-500 bg-purple-500/10' },
-    { id: 'prayer', title: 'أذكار بعد الصلاة', icon: Heart, color: 'text-emerald-500 bg-emerald-500/10' },
-    { id: 'wake', title: 'أذكار الاستيقاظ', icon: Sun, color: 'text-orange-500 bg-orange-500/10' },
+    { id: 'wake', title: 'أذكار الاستيقاظ', icon: Compass, color: 'text-orange-500 bg-orange-500/10' },
+    { id: 'after-prayer', title: 'أذكار بعد الصلاة', icon: Heart, color: 'text-emerald-500 bg-emerald-500/10' },
+    { id: 'tasbih', title: 'تسابيح', icon: Activity, color: 'text-rose-500 bg-rose-500/10' },
+    { id: 'quranic-duas', title: 'أدعية قرآنية', icon: BookOpen, color: 'text-blue-500 bg-blue-500/10' },
+    { id: 'prophetic-duas', title: 'أدعية الأنبياء', icon: Bookmark, color: 'text-red-500 bg-red-500/10' },
     { id: 'ruqyah', title: 'الرقية الشرعية', icon: Shield, color: 'text-teal-500 bg-teal-500/10' },
   ];
 
@@ -28,7 +31,7 @@ export const Adhkar: React.FC = () => {
           <Card 
             key={idx} 
             className="flex flex-col items-center justify-center p-6 text-center cursor-pointer hover:shadow-xl transition-all hover:-translate-y-1"
-            onClick={() => navigate(`/adhkar/${cat.id}`)}
+            onClick={() => cat.id === 'ruqyah' ? navigate('/ruqyah') : navigate(`/adhkar/${cat.id}`)}
           >
             <div className={`p-4 rounded-2xl mb-4 ${cat.color}`}>
               <cat.icon size={32} />
