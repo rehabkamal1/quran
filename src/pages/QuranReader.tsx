@@ -4,7 +4,7 @@ import { Button } from '../components/ui/Button';
 import { Play, Pause, Settings, ChevronRight, ChevronLeft, Info, BookmarkCheck, BookOpen } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { quranApi } from '../services/quranApi';
-import type { SurahData, Ayah, TafsirData, TafsirAyah } from '../services/quranApi';
+import type { SurahData, Ayah, TafsirData } from '../services/quranApi';
 import { audioService } from '../services/audioService';
 import { storage } from '../services/storage';
 import { motion, AnimatePresence } from 'framer-motion';

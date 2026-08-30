@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Compass, Clock, MapPin } from 'lucide-react';
+import { Clock, MapPin } from 'lucide-react';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { prayerApi } from '../services/prayerApi';
 import type { PrayerTimes } from '../services/prayerApi';
-import { storage } from '../services/storage';
 
 const CITIES = [
   { id: 'Makkah', name: 'مكة المكرمة', country: 'SA' },
@@ -58,10 +57,7 @@ export const Prayer: React.FC = () => {
     }
   };
 
-  const getPrayerStatus = (name: string, time: string) => {
-    // Basic logic for now - ideally calculate real time differences
-    return 'upcoming'; 
-  };
+
 
   const formattedPrayers = timings ? [
     { name: 'الفجر', time: timings.Fajr, status: 'past' },

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card } from '../components/ui/Card';
 import { hadithData } from '../data/hadithData';
 import { motion, AnimatePresence } from 'framer-motion';

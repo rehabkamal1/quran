@@ -32,8 +32,8 @@ export const Qibla: React.FC = () => {
     const handleOrientation = (event: DeviceOrientationEvent) => {
       // Different browsers handle this differently, simple fallback logic
       let heading = 0;
-      if (event.webkitCompassHeading) {
-        heading = event.webkitCompassHeading;
+      if ((event as any).webkitCompassHeading) {
+        heading = (event as any).webkitCompassHeading;
       } else if (event.alpha !== null) {
         // Simple conversion, might need more math for true north
         heading = 360 - event.alpha;

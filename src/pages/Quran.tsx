@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
-import { Search, Bookmark, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Bookmark } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { quranApi } from '../services/quranApi';
 import type { SurahMeta } from '../services/quranApi';

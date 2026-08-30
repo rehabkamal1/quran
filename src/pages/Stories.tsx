@@ -20,7 +20,7 @@ export const Stories: React.FC = () => {
       </div>
 
       <div className="space-y-6">
-        {storiesData.map((story, index) => {
+        {storiesData.map((story) => {
           const isExpanded = expandedId === story.id;
           
           return (

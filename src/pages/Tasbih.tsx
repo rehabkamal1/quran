@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card } from '../components/ui/Card';
+
 import { Button } from '../components/ui/Button';
 import { RotateCcw, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';

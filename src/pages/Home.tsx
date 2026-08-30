@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Card } from '../components/ui/Card';
-import { ProgressBar } from '../components/ui/ProgressBar';
-import { Button } from '../components/ui/Button';
 import { 
   BookOpen, Compass, Heart, Activity, Bookmark, Clock, 
-  Radio, ShieldCheck, Play, ChevronLeft, Calendar 
+  Radio, ShieldCheck, ChevronLeft, Calendar 
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { storage } from '../services/storage';
@@ -14,15 +12,10 @@ import { quranApi } from '../services/quranApi';
 export const Home: React.FC = () => {
   const navigate = useNavigate();
   const [lastRead, setLastRead] = useState<LastRead | null>(null);
-  const [khatmahPlan, setKhatmahPlan] = useState<any>(null);
   const [dailyAyah, setDailyAyah] = useState<{text: string, surah: string}>({text: '', surah: ''});
 
   useEffect(() => {
     setLastRead(storage.getLastRead());
-    const savedKhatmah = localStorage.getItem('khatmah_plan');
-    if (savedKhatmah) {
-      setKhatmahPlan(JSON.parse(savedKhatmah));
-    }
     
     // Set a random daily ayah
     const loadDaily = async () => {
