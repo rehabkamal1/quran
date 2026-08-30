@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Moon, Sun, Settings, BookOpen } from 'lucide-react';
+import { Moon, Sun, Settings } from 'lucide-react';
 import { useDarkMode } from '../../hooks/useDarkMode';
 import { Button } from '../ui/Button';
 

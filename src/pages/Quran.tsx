@@ -11,7 +11,7 @@ export const Quran: React.FC = () => {
   const [surahs, setSurahs] = useState<SurahMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedJuz, setExpandedJuz] = useState<number | null>(null);
+
   const navigate = useNavigate();
 
   useEffect(() => {
