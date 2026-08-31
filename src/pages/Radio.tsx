@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '../components/ui/Card';
-import { Play, Pause, Radio as RadioIcon, Loader2 } from 'lucide-react';
+import { Play, Pause, Radio as RadioIcon, Loader2, WifiOff } from 'lucide-react';
 
 interface RadioStation {
   id: number;
@@ -8,26 +8,52 @@ interface RadioStation {
   url: string;
 }
 
+const DEFAULT_STATIONS: RadioStation[] = [
+  { id: 1, name: 'إذاعة القران الكريم - القاهرة', url: 'https://stream.radiojar.com/8shnrn40cv8uv' },
+  { id: 2, name: 'إذاعة القرآن الكريم - مكة المكرمة', url: 'https://backup.qurango.net/radio/makkah' },
+  { id: 3, name: 'إذاعة مشاري العفاسي', url: 'https://backup.qurango.net/radio/mishary_alafasi' },
+  { id: 4, name: 'إذاعة عبد الباسط عبد الصمد', url: 'https://backup.qurango.net/radio/abdulbasit_abdulsamad_mojawwad' },
+  { id: 5, name: 'إذاعة ماهر المعيقلي', url: 'https://backup.qurango.net/radio/maher' },
+  { id: 6, name: 'إذاعة محمود خليل الحصري', url: 'https://backup.qurango.net/radio/hussary' },
+];
+
 export const Radio: React.FC = () => {
-  const [stations, setStations] = useState<RadioStation[]>([]);
+  const [stations, setStations] = useState<RadioStation[]>(DEFAULT_STATIONS);
   const [loading, setLoading] = useState(true);
   const [activeStation, setActiveStation] = useState<RadioStation | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
+    const handleOnlineStatus = () => setIsOffline(!navigator.onLine);
+    window.addEventListener('online', handleOnlineStatus);
+    window.addEventListener('offline', handleOnlineStatus);
+
     const fetchRadios = async () => {
       try {
+        if (!navigator.onLine) {
+          setLoading(false);
+          return;
+        }
         const res = await fetch('https://mp3quran.net/api/v3/radios?language=ar');
+        if (!res.ok) throw new Error('Failed to fetch radios');
         const data = await res.json();
-        setStations(data.radios);
-        setLoading(false);
+        if (data && data.radios && data.radios.length > 0) {
+          setStations(data.radios);
+        }
       } catch (error) {
-        console.error('Failed to fetch radios', error);
+        console.warn('Failed to fetch radios online, using fallback list', error);
+      } finally {
         setLoading(false);
       }
     };
     fetchRadios();
+
+    return () => {
+      window.removeEventListener('online', handleOnlineStatus);
+      window.removeEventListener('offline', handleOnlineStatus);
+    };
   }, []);
 
   const togglePlay = (station: RadioStation) => {
@@ -67,6 +93,15 @@ export const Radio: React.FC = () => {
         </h1>
         <p className="text-text-muted dark:text-text-darkMuted text-lg">بث مباشر على مدار الساعة</p>
       </div>
+
+      {isOffline && (
+        <Card className="p-4 bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300 flex items-center gap-3">
+          <WifiOff size={24} className="shrink-0" />
+          <p className="text-sm font-semibold">
+            أنت حالياً في الوضع غير المتصل بالإنترنت. استماع البث المباشر للإذاعات يحتاج لاتصال إنترنت.
+          </p>
+        </Card>
+      )}
 
       {loading ? (
         <div className="flex justify-center p-12 text-primary">
