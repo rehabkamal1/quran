@@ -19,14 +19,18 @@ export const Home: React.FC = () => {
     
     // Set a random daily ayah
     const loadDaily = async () => {
-      const quran = await quranApi.getQuran();
-      if (quran.length > 0) {
-        const randomSurah = quran[Math.floor(Math.random() * 114)];
-        const randomAyah = randomSurah.ayahs[Math.floor(Math.random() * randomSurah.ayahs.length)];
-        setDailyAyah({
-          text: randomAyah.text,
-          surah: `${randomSurah.name} • الآية ${randomAyah.numberInSurah}`
-        });
+      try {
+        const randomSurahNum = Math.floor(Math.random() * 114) + 1;
+        const randomSurah = await quranApi.getSurah(randomSurahNum);
+        if (randomSurah && randomSurah.ayahs.length > 0) {
+          const randomAyah = randomSurah.ayahs[Math.floor(Math.random() * randomSurah.ayahs.length)];
+          setDailyAyah({
+            text: randomAyah.text,
+            surah: `${randomSurah.name} • الآية ${randomAyah.numberInSurah}`
+          });
+        }
+      } catch (error) {
+        console.error("Failed to load daily ayah:", error);
       }
     };
     loadDaily();
