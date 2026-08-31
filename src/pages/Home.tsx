@@ -8,14 +8,60 @@ import { useNavigate } from 'react-router-dom';
 import { storage } from '../services/storage';
 import type { LastRead } from '../services/storage';
 import { quranApi } from '../services/quranApi';
+import { notificationService } from '../services/notificationService';
+
+const DAILY_DHIKRS = [
+  "أَسْتَغْفِرُ اللَّهَ وَأَتُوبُ إِلَيْهِ",
+  "سُبْحَانَ اللَّهِ وَبِحَمْدِهِ",
+  "سُبْحَانَ اللَّهِ الْعَظِيمِ",
+  "لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ",
+  "لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ",
+  "الْحَمْدُ لِلَّهِ حَمْدًا كَثِيرًا طَيِّبًا مُبَارَكًا فِيهِ",
+  "اللَّهُمَّ صَلِّ وَسَلِّمْ عَلَى نَبِيِّنَا مُحَمَّدٍ",
+  "سُبْحَانَ اللَّهِ وَالْحَمْدُ لِلَّهِ وَلَا إِلَهَ إِلَّا اللَّهُ وَاللَّهُ أَكْبَرُ",
+  "لَا إِلَهَ إِلَّا أَنْتَ سُبْحَانَكَ إِنِّي كُنْتُ مِنَ الظَّالِمِينَ",
+  "اللَّهُمَّ أَعِنِّي عَلَى ذِكْرِكَ وَشُكْرِكَ وَحُسْنِ عِبَادَتِكَ"
+];
+
+const DAILY_DUAS = [
+  "رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ",
+  "اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَفْوَ وَالْعَافِيَةَ فِي الدُّنْيَا وَالْآخِرَةِ",
+  "يَا مُقَلِّبَ الْقُلُوبِ ثَبِّتْ قَلْبِي عَلَى دِينِكَ",
+  "رَبِّ اغْفِرْ لِي وَلِوَالِدَيَّ وَلِلْمُؤْمِنِينَ",
+  "اللَّهُمَّ إِنَّكَ عَفُوٌّ تُحِبُّ الْعَفْوَ فَاعْفُ عَنِّي",
+  "رَبَّنَا لَا تُزِغْ قُلُوبَنَا بَعْدَ إِذْ هَدَيْتَنَا",
+  "اللَّهُمَّ اكْفِنِي بِحَلَالِكَ عَنْ حَرَامِكَ وَأَغْنِنِي بِفَضْلِكَ عَمَّنْ سِوَاكَ",
+  "رَبِّ اشْرَحْ لِي صَدْرِي وَيَسِّرْ لِي أَمْرِي",
+  "اللَّهُمَّ إِنِّي أَسْأَلُكَ الْهُدَى وَالتُّقَى وَالْعَفَافَ وَالْغِنَى",
+  "رَبِّ أَوْزِعْنِي أَنْ أَشْكُرَ نِعْمَتَكَ الَّتِي أَنْعَمْتَ عَلَيَّ"
+];
+
+const getDayOfYear = (): number => {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  const diff = now.getTime() - start.getTime();
+  const oneDay = 1000 * 60 * 60 * 24;
+  return Math.floor(diff / oneDay);
+};
 
 export const Home: React.FC = () => {
   const navigate = useNavigate();
   const [lastRead, setLastRead] = useState<LastRead | null>(null);
   const [dailyAyah, setDailyAyah] = useState<{text: string, surah: string}>({text: '', surah: ''});
+  const [dhikrOfDay, setDhikrOfDay] = useState('');
+  const [duaOfDay, setDuaOfDay] = useState('');
+  const [alertsEnabled, setAlertsEnabled] = useState(() => notificationService.isEnabled());
 
   useEffect(() => {
     setLastRead(storage.getLastRead());
+
+    // Set deterministic Dhikr & Dua of the day
+    const dayIndex = getDayOfYear();
+    setDhikrOfDay(DAILY_DHIKRS[dayIndex % DAILY_DHIKRS.length]);
+    setDuaOfDay(DAILY_DUAS[dayIndex % DAILY_DUAS.length]);
+
+    // Check and trigger reminder if schedule is met
+    notificationService.checkAndTriggerReminder();
     
     // Set a random daily ayah
     const loadDaily = async () => {
@@ -35,6 +81,26 @@ export const Home: React.FC = () => {
     };
     loadDaily();
   }, []);
+
+  const toggleNotifications = async () => {
+    if (alertsEnabled) {
+      notificationService.setEnabled(false);
+      setAlertsEnabled(false);
+    } else {
+      const granted = await notificationService.requestPermission();
+      if (granted) {
+        notificationService.setEnabled(true);
+        setAlertsEnabled(true);
+        notificationService.showNotification(
+          "تم تفعيل التنبيهات بنجاح! 🎉",
+          "سنقوم بتذكيرك بمواعيد أذكار الصباح والمساء يومياً إن شاء الله.",
+          "/adhkar"
+        );
+      } else {
+        alert("يرجى السماح بالتنبيهات من إعدادات المتصفح أولاً.");
+      }
+    }
+  };
 
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24">
@@ -78,6 +144,27 @@ export const Home: React.FC = () => {
         </Card>
       </div>
 
+      {/* Notification Toggle Card */}
+      <Card className="p-4 bg-primary/10 dark:bg-primary-dark/20 border border-primary/20 flex items-center justify-between shadow-sm">
+        <div className="flex items-center gap-3 text-right" dir="rtl">
+          <span className="text-2xl">🔔</span>
+          <div>
+            <h3 className="font-bold text-sm text-primary dark:text-primary-light">تنبيهات الأذكار التلقائية</h3>
+            <p className="text-xs text-text-muted">تنبيه يومي بمواعيد أذكار الصباح والمساء</p>
+          </div>
+        </div>
+        <button
+          onClick={toggleNotifications}
+          className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+            alertsEnabled
+              ? 'bg-primary text-white hover:bg-primary-dark'
+              : 'bg-black/10 dark:bg-white/10 text-text-muted hover:bg-black/20 dark:hover:bg-white/20'
+          }`}
+        >
+          {alertsEnabled ? 'مفعلة' : 'تفعيل'}
+        </button>
+      </Card>
+
       {/* Daily Highlights (إشراقات اليوم) */}
       <section className="space-y-4">
         <h2 className="text-2xl font-bold border-r-4 border-primary pr-3">إشراقات اليوم</h2>
@@ -97,14 +184,14 @@ export const Home: React.FC = () => {
             <div className="flex items-center gap-2 text-cyan-700 dark:text-cyan-500 font-bold mb-3">
               <CheckCircle size={18} /> ذكر اليوم
             </div>
-            <p className="font-quran text-xl text-gray-800 dark:text-gray-200">أَسْتَغْفِرُ اللَّهَ وَأَتُوبُ إِلَيْهِ</p>
+            <p className="font-quran text-xl text-gray-800 dark:text-gray-200">{dhikrOfDay || 'أَسْتَغْفِرُ اللَّهَ وَأَتُوبُ إِلَيْهِ'}</p>
           </Card>
           
           <Card className="p-6 bg-rose-50 dark:bg-rose-900/20 border-0 flex flex-col justify-center items-center text-center">
             <div className="flex items-center gap-2 text-rose-700 dark:text-rose-500 font-bold mb-3">
               <Heart size={18} /> دعاء اليوم
             </div>
-            <p className="font-quran text-xl text-gray-800 dark:text-gray-200">رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً</p>
+            <p className="font-quran text-xl text-gray-800 dark:text-gray-200">{duaOfDay || 'رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً'}</p>
           </Card>
         </div>
       </section>

@@ -34,14 +34,29 @@ class AdhkarApi {
         // Map the category key to its English ID for easier routing mapping
         const englishId = Object.keys(CATEGORY_MAP).find(k => CATEGORY_MAP[k] === key) || key;
         
-        parsed[englishId] = items.map((item, index) => ({
-          id: `${englishId}-${index}`,
-          category: item.category || key,
-          text: item.content || '',
-          count: parseInt(item.count) || 1,
-          description: item.description || '',
-          reference: item.reference || '',
-        }));
+        const flatItems: any[] = [];
+        for (const item of items) {
+          if (item && typeof item === 'object' && ('0' in item)) {
+            // It has nested numerical keys, let's extract them in order
+            const keys = Object.keys(item).filter(k => /^\d+$/.test(k)).sort((a, b) => parseInt(a) - parseInt(b));
+            for (const subKey of keys) {
+              flatItems.push(item[subKey]);
+            }
+          } else {
+            flatItems.push(item);
+          }
+        }
+
+        parsed[englishId] = flatItems
+          .filter(item => item && item.content && item.content !== 'stop')
+          .map((item, index) => ({
+            id: `${englishId}-${index}`,
+            category: item.category || key,
+            text: item.content || '',
+            count: parseInt(item.count) || 1,
+            description: item.description || '',
+            reference: item.reference || '',
+          }));
       }
 
       this.cache = parsed;
