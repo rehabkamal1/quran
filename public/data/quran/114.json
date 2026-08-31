@@ -1,0 +1,44 @@
+{
+  "number": 114,
+  "name": "سُورَةُ النَّاسِ",
+  "englishName": "An-Naas",
+  "revelationType": "Meccan",
+  "ayahs": [
+    {
+      "number": 6231,
+      "numberInSurah": 1,
+      "juz": 30,
+      "text": "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ قُلْ أَعُوذُ بِرَبِّ ٱلنَّاسِ"
+    },
+    {
+      "number": 6232,
+      "numberInSurah": 2,
+      "juz": 30,
+      "text": "مَلِكِ ٱلنَّاسِ"
+    },
+    {
+      "number": 6233,
+      "numberInSurah": 3,
+      "juz": 30,
+      "text": "إِلَٰهِ ٱلنَّاسِ"
+    },
+    {
+      "number": 6234,
+      "numberInSurah": 4,
+      "juz": 30,
+      "text": "مِن شَرِّ ٱلْوَسْوَاسِ ٱلْخَنَّاسِ"
+    },
+    {
+      "number": 6235,
+      "numberInSurah": 5,
+      "juz": 30,
+      "text": "ٱلَّذِى يُوَسْوِسُ فِى صُدُورِ ٱلنَّاسِ"
+    },
+    {
+      "number": 6236,
+      "numberInSurah": 6,
+      "juz": 30,
+      "text": "مِنَ ٱلْجِنَّةِ وَٱلنَّاسِ"
+    }
+  ]
+}

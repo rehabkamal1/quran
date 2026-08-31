@@ -65,7 +65,7 @@ export const AdhkarReader: React.FC = () => {
     <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in duration-500 pb-24">
       
       {/* Header */}
-      <div className="sticky top-[72px] md:top-20 z-40 bg-background/95 dark:bg-background-dark/95 backdrop-blur-md py-4 border-b border-black/5 dark:border-white/5 flex items-center justify-between">
+      <div className="sticky top-0 md:top-20 z-40 bg-background/95 dark:bg-background-dark/95 backdrop-blur-md py-4 border-b border-black/5 dark:border-white/5 flex items-center justify-between">
         <Button variant="ghost" size="icon" onClick={() => navigate('/adhkar')}>
           <ChevronRight size={24} />
         </Button>
@@ -108,7 +108,7 @@ export const AdhkarReader: React.FC = () => {
                   className={`p-6 md:p-8 text-center cursor-pointer select-none transition-all duration-300 ${isCompleted(dhikr.id) ? 'bg-black/5 dark:bg-white/5 border-transparent shadow-none' : 'hover:border-primary/50'}`}
                   onClick={() => handleTap(dhikr.id)}
                 >
-                  <p className="font-quran text-2xl md:text-3xl leading-loose mb-6">
+                  <p className="font-quran text-2xl md:text-3xl leading-loose mb-6 whitespace-pre-line">
                     {dhikr.text}
                   </p>
 

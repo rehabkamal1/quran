@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Play, Pause, Settings, ChevronRight, ChevronLeft, Info, BookmarkCheck, BookOpen } from 'lucide-react';
+import { Play, Pause, Settings, ChevronRight, ChevronLeft, BookmarkCheck, BookOpen, Share2, Check } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { quranApi } from '../services/quranApi';
 import type { SurahData, Ayah, TafsirData } from '../services/quranApi';
-import { audioService } from '../services/audioService';
+import { audioService, RECITERS } from '../services/audioService';
 import { storage } from '../services/storage';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -21,8 +21,11 @@ export const QuranReader: React.FC = () => {
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
   const [activeAyah, setActiveAyah] = useState<number | null>(null);
   const [expandedTafsir, setExpandedTafsir] = useState<number | null>(null);
-
   const [bookmarkedAyahs, setBookmarkedAyahs] = useState<string[]>([]);
+  const [copiedAyah, setCopiedAyah] = useState<number | null>(null);
+  
+  const [showReciterMenu, setShowReciterMenu] = useState(false);
+  const [currentReciter, setCurrentReciter] = useState(() => audioService.getReciter());
   
   const readerRef = useRef<HTMLDivElement>(null);
 
@@ -43,6 +46,15 @@ export const QuranReader: React.FC = () => {
     };
     loadData();
   }, [surahId]);
+
+  // Clean up audio on unmount
+  useEffect(() => {
+    return () => {
+      if (currentAudio) {
+        currentAudio.pause();
+      }
+    };
+  }, [currentAudio]);
 
   useEffect(() => {
     if (!surah) return;
@@ -82,10 +94,27 @@ export const QuranReader: React.FC = () => {
     };
   };
 
+  const changeReciter = (reciterId: string) => {
+    audioService.setReciter(reciterId);
+    setCurrentReciter(reciterId);
+    setShowReciterMenu(false);
+    
+    // If currently playing, restart the active ayah with the new reciter!
+    if (isPlaying && activeAyah && surah) {
+      const ayah = surah.ayahs.find(a => a.numberInSurah === activeAyah);
+      if (ayah) {
+        playAyah(ayah);
+      }
+    }
+  };
+
   const togglePlay = () => {
     if (isPlaying && currentAudio) {
       currentAudio.pause();
       setIsPlaying(false);
+    } else if (!isPlaying && currentAudio) {
+      currentAudio.play();
+      setIsPlaying(true);
     } else if (!isPlaying && activeAyah && surah) {
       const ayah = surah.ayahs.find(a => a.numberInSurah === activeAyah);
       if (ayah) playAyah(ayah);
@@ -118,6 +147,13 @@ export const QuranReader: React.FC = () => {
     setExpandedTafsir(expandedTafsir === ayahNumber ? null : ayahNumber);
   };
 
+  const handleShare = (text: string, surahName: string, ayahNumber: number) => {
+    const shareText = `«${text}»\n[سورة ${surahName} - آية ${ayahNumber}]`;
+    navigator.clipboard.writeText(shareText);
+    setCopiedAyah(ayahNumber);
+    setTimeout(() => setCopiedAyah(null), 2000);
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center h-screen">جاري تحميل السورة...</div>;
   }
@@ -129,7 +165,8 @@ export const QuranReader: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-24">
       
-      <div className="sticky top-[72px] md:top-20 z-40 bg-background/95 dark:bg-background-dark/95 backdrop-blur-md py-4 border-b border-black/5 dark:border-white/5 flex items-center justify-between">
+      {/* Sticky Header */}
+      <div className="sticky top-0 md:top-20 z-40 bg-background/95 dark:bg-background-dark/95 backdrop-blur-md py-4 border-b border-black/5 dark:border-white/5 flex items-center justify-between">
         <Button variant="ghost" size="icon" onClick={() => navigate('/quran')}>
           <ChevronRight size={24} />
         </Button>
@@ -139,18 +176,18 @@ export const QuranReader: React.FC = () => {
             {surah.revelationType === 'Meccan' ? 'مكية' : 'مدنية'} • {surah.ayahs.length} آيات
           </p>
         </div>
-        <Button variant="ghost" size="icon">
-          <Settings size={24} />
-        </Button>
+        <div className="w-10"></div> {/* Spacer to keep center alignment */}
       </div>
 
-      <Card ref={readerRef} className="min-h-[60vh] p-4 sm:p-8 md:p-12 text-center leading-loose text-2xl md:text-3xl font-quran !rounded-3xl border-0 shadow-lg" dir="rtl">
-        {surah.number !== 1 && surah.number !== 9 && (
-          <div className="text-center mb-10 text-primary dark:text-primary-light text-3xl">
-            بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
-          </div>
-        )}
-        
+      {/* Bismillah Header Card */}
+      {surah.number !== 1 && surah.number !== 9 && (
+        <div className="text-center py-6 text-primary dark:text-primary-light text-3xl font-quran bg-white dark:bg-card-dark rounded-2xl shadow-soft border border-black/5 dark:border-white/5">
+          بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
+        </div>
+      )}
+
+      {/* Verse Cards List */}
+      <div ref={readerRef} className="space-y-4" dir="rtl">
         {surah.ayahs.map(ayah => {
           let ayahText = ayah.text;
           if (surah.number !== 1 && ayah.numberInSurah === 1 && ayahText.startsWith('بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ')) {
@@ -163,36 +200,31 @@ export const QuranReader: React.FC = () => {
           const tafsirText = tafsir?.ayahs.find(t => t.numberInSurah === ayah.numberInSurah)?.text;
 
           return (
-            <React.Fragment key={ayah.numberInSurah}>
-              <span 
-                className={`hover:bg-primary/10 rounded px-1 transition-colors cursor-pointer relative group inline-block py-1
-                  ${isActive ? 'bg-primary/20 dark:bg-primary/30 text-primary-dark dark:text-primary-light' : ''}
-                `}
-                onClick={() => playAyah(ayah)}
-              >
-                {ayahText} 
-                <span 
-                  className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-primary/30 text-lg mx-2 text-primary relative"
-                >
+            <Card 
+              key={ayah.numberInSurah} 
+              className={`p-5 sm:p-6 flex flex-col justify-between border-0 shadow-soft bg-white dark:bg-card-dark rounded-2xl relative transition-all duration-300 ${
+                isActive ? 'ring-2 ring-primary/50 bg-primary/5 dark:bg-primary-dark/5' : ''
+              }`}
+            >
+              {/* Card Header */}
+              <div className="flex items-center justify-between text-text-muted dark:text-text-darkMuted text-xs mb-4">
+                <div className="w-8 h-8 rounded-full bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary-light flex items-center justify-center font-bold font-sans">
                   {ayah.numberInSurah}
-                  {/* Actions inside the number circle when hovered or active */}
-                  <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2 bg-white dark:bg-gray-800 shadow-md p-1 rounded-full z-10">
-                    <button onClick={(e) => { e.stopPropagation(); handleBookmark(ayah); }} className="p-1 hover:text-primary">
-                      {isBookmarked ? <BookmarkCheck size={16} /> : <BookmarkCheck size={16} className="opacity-50" />}
-                    </button>
-                    <button onClick={(e) => toggleTafsir(ayah.numberInSurah, e)} className="p-1 hover:text-primary">
-                      <BookOpen size={16} />
-                    </button>
-                  </div>
-                  
-                  {isBookmarked && (
-                    <div className="absolute -top-1 -right-1 text-secondary">
-                      <BookmarkCheck size={14} fill="currentColor" />
-                    </div>
-                  )}
-                </span>
-              </span>
-              
+                </div>
+                <div className="bg-black/5 dark:bg-white/5 px-3 py-1 rounded-full font-sans">
+                  جـ {ayah.juz}
+                </div>
+              </div>
+
+              {/* Card Content - Verse Text */}
+              <div className="text-center py-4">
+                <p className={`font-quran text-2xl md:text-3xl leading-loose text-text-main dark:text-text-darkMain ${
+                  isActive ? 'text-primary-dark dark:text-primary-light' : ''
+                }`}>
+                  {ayahText}
+                </p>
+              </div>
+
               {/* Tafsir Block */}
               <AnimatePresence>
                 {isTafsirOpen && tafsirText && (
@@ -200,7 +232,7 @@ export const QuranReader: React.FC = () => {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="block w-full text-right bg-black/5 dark:bg-white/5 p-4 rounded-xl my-4 text-lg font-sans leading-relaxed border-r-4 border-primary"
+                    className="block w-full text-right bg-black/5 dark:bg-white/5 p-4 rounded-xl mb-4 text-base md:text-lg font-sans leading-relaxed border-r-4 border-primary overflow-hidden"
                   >
                     <div className="flex items-center gap-2 mb-2 text-primary font-bold">
                       <BookOpen size={18} /> التفسير الميسر:
@@ -209,15 +241,115 @@ export const QuranReader: React.FC = () => {
                   </motion.div>
                 )}
               </AnimatePresence>
-            </React.Fragment>
+
+              {/* Card Actions Footer */}
+              <div className="border-t border-black/5 dark:border-white/5 pt-4 mt-2 flex items-center justify-around">
+                {/* Play Button */}
+                <button 
+                  onClick={() => {
+                    if (isActive && isPlaying) {
+                      if (currentAudio) {
+                        currentAudio.pause();
+                        setIsPlaying(false);
+                      }
+                    } else if (isActive && !isPlaying) {
+                      if (currentAudio) {
+                        currentAudio.play();
+                        setIsPlaying(true);
+                      } else {
+                        playAyah(ayah);
+                      }
+                    } else {
+                      playAyah(ayah);
+                    }
+                  }} 
+                  className={`flex flex-col items-center gap-1 text-[10px] sm:text-xs font-semibold transition-colors w-16 ${
+                    isActive && isPlaying ? 'text-primary dark:text-primary-light' : 'text-text-muted dark:text-text-darkMuted hover:text-text-main'
+                  }`}
+                >
+                  {isActive && isPlaying ? <Pause size={18} /> : <Play size={18} />}
+                  <span>{isActive && isPlaying ? 'إيقاف' : 'تشغيل'}</span>
+                </button>
+
+                {/* Tafsir Button */}
+                <button 
+                  onClick={(e) => toggleTafsir(ayah.numberInSurah, e)} 
+                  className={`flex flex-col items-center gap-1 text-[10px] sm:text-xs font-semibold transition-colors w-16 ${
+                    isTafsirOpen ? 'text-primary dark:text-primary-light' : 'text-text-muted dark:text-text-darkMuted hover:text-text-main'
+                  }`}
+                >
+                  <BookOpen size={18} />
+                  <span>تفسير</span>
+                </button>
+
+                {/* Share Button */}
+                <button 
+                  onClick={() => handleShare(ayahText, surah.name, ayah.numberInSurah)} 
+                  className={`flex flex-col items-center gap-1 text-[10px] sm:text-xs font-semibold transition-colors w-16 ${
+                    copiedAyah === ayah.numberInSurah ? 'text-emerald-500 font-bold' : 'text-text-muted dark:text-text-darkMuted hover:text-text-main'
+                  }`}
+                >
+                  {copiedAyah === ayah.numberInSurah ? <Check size={18} /> : <Share2 size={18} />}
+                  <span>{copiedAyah === ayah.numberInSurah ? 'تم النسخ' : 'مشاركة'}</span>
+                </button>
+
+                {/* Bookmark Button */}
+                <button 
+                  onClick={() => handleBookmark(ayah)} 
+                  className={`flex flex-col items-center gap-1 text-[10px] sm:text-xs font-semibold transition-colors w-16 ${
+                    isBookmarked ? 'text-primary dark:text-primary-light' : 'text-text-muted dark:text-text-darkMuted hover:text-text-main'
+                  }`}
+                >
+                  <BookmarkCheck size={18} className={isBookmarked ? 'fill-current' : ''} />
+                  <span>حفظ</span>
+                </button>
+              </div>
+            </Card>
           );
         })}
-      </Card>
+      </div>
 
+      {/* Overlay Backdrop to close menu when clicking outside */}
+      {showReciterMenu && (
+        <div 
+          className="fixed inset-0 z-45 bg-transparent" 
+          onClick={() => setShowReciterMenu(false)}
+        />
+      )}
+
+      {/* Floating Reciters Popover Menu */}
+      <AnimatePresence>
+        {showReciterMenu && (
+          <motion.div 
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            className="fixed bottom-36 md:bottom-24 left-1/2 -translate-x-1/2 w-[90%] max-w-xs bg-card dark:bg-card-dark shadow-2xl rounded-2xl p-3 border border-black/5 dark:border-white/10 z-50 flex flex-col gap-1"
+          >
+            <div className="text-xs font-bold text-text-muted px-3 py-2 border-b border-black/5 dark:border-white/5 text-right font-sans">
+              اختر القارئ:
+            </div>
+            {RECITERS.map(reciter => (
+              <button
+                key={reciter.id}
+                onClick={() => changeReciter(reciter.id)}
+                className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-right text-sm font-semibold transition-colors font-sans ${
+                  currentReciter === reciter.id
+                    ? 'bg-primary text-white'
+                    : 'text-text-main dark:text-text-darkMain hover:bg-black/5 dark:hover:bg-white/5'
+                }`}
+              >
+                <span>{reciter.name}</span>
+                {currentReciter === reciter.id && <Check size={16} />}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Global Bottom Audio Player */}
       <div className="fixed bottom-20 md:bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-card dark:bg-card-dark shadow-2xl rounded-full p-2 flex items-center justify-between border border-black/5 dark:border-white/10 z-50">
-        <Button variant="ghost" size="icon" className="rounded-full">
-          <Info size={20} />
-        </Button>
+        <div className="w-10"></div> {/* Spacer */}
         
         <Button 
           variant="ghost" size="icon" className="rounded-full"
@@ -242,7 +374,12 @@ export const QuranReader: React.FC = () => {
           <ChevronLeft size={20} />
         </Button>
 
-        <Button variant="ghost" size="icon" className="rounded-full" onClick={() => navigate('/settings')}>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className={`rounded-full transition-colors ${showReciterMenu ? 'text-primary' : ''}`} 
+          onClick={() => setShowReciterMenu(!showReciterMenu)}
+        >
           <Settings size={20} />
         </Button>
       </div>

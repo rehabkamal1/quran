@@ -1,0 +1,38 @@
+{
+  "number": 113,
+  "name": "سُورَةُ الفَلَقِ",
+  "englishName": "Al-Falaq",
+  "revelationType": "Meccan",
+  "ayahs": [
+    {
+      "number": 6226,
+      "numberInSurah": 1,
+      "juz": 30,
+      "text": "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ قُلْ أَعُوذُ بِرَبِّ ٱلْفَلَقِ"
+    },
+    {
+      "number": 6227,
+      "numberInSurah": 2,
+      "juz": 30,
+      "text": "مِن شَرِّ مَا خَلَقَ"
+    },
+    {
+      "number": 6228,
+      "numberInSurah": 3,
+      "juz": 30,
+      "text": "وَمِن شَرِّ غَاسِقٍ إِذَا وَقَبَ"
+    },
+    {
+      "number": 6229,
+      "numberInSurah": 4,
+      "juz": 30,
+      "text": "وَمِن شَرِّ ٱلنَّفَّٰثَٰتِ فِى ٱلْعُقَدِ"
+    },
+    {
+      "number": 6230,
+      "numberInSurah": 5,
+      "juz": 30,
+      "text": "وَمِن شَرِّ حَاسِدٍ إِذَا حَسَدَ"
+    }
+  ]
+}

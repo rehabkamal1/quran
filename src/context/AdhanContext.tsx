@@ -86,24 +86,51 @@ export const AdhanProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const cityId = localStorage.getItem('prayer_selected_city') || 'Makkah';
       const city = CITIES.find(c => c.id === cityId) || CITIES[0];
 
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
+
       let timings: PrayerTimes | null = null;
 
-      if (useLocation && navigator.geolocation) {
+      try {
+        const cacheStr = localStorage.getItem('prayer_timings_cache');
         const cachedLat = localStorage.getItem('prayer_lat');
         const cachedLng = localStorage.getItem('prayer_lng');
-        if (cachedLat && cachedLng) {
-          timings = await prayerApi.getTimingsByCoordinates(Number(cachedLat), Number(cachedLng));
-        } else {
-          timings = await prayerApi.getTimingsByCity(city.id, city.country);
+        const latLngStr = (cachedLat && cachedLng) ? `${cachedLat},${cachedLng}` : '';
+        
+        if (cacheStr) {
+          const cache = JSON.parse(cacheStr);
+          const isSameDate = cache.date === todayStr;
+          const isSameLocationMode = cache.useLocation === useLocation;
+          const isSameLocationData = useLocation ? cache.latLng === latLngStr : cache.cityId === city.id;
+          
+          if (isSameDate && isSameLocationMode && isSameLocationData && cache.timings) {
+            timings = cache.timings;
+          }
         }
-      } else {
-        timings = await prayerApi.getTimingsByCity(city.id, city.country);
+
+        if (!timings) {
+          if (useLocation && cachedLat && cachedLng) {
+            timings = await prayerApi.getTimingsByCoordinates(Number(cachedLat), Number(cachedLng));
+          } else {
+            timings = await prayerApi.getTimingsByCity(city.id, city.country);
+          }
+
+          if (timings) {
+            const newCache = {
+              date: todayStr,
+              useLocation,
+              latLng: latLngStr,
+              cityId: city.id,
+              timings
+            };
+            localStorage.setItem('prayer_timings_cache', JSON.stringify(newCache));
+          }
+        }
+      } catch (e) {
+        console.error('Error handling timings cache', e);
       }
 
       if (!timings) return;
-
-      const now = new Date();
-      const todayStr = now.toISOString().split('T')[0];
 
       const prayers = [
         { name: 'الفجر', key: 'Fajr', time: timings.Fajr },

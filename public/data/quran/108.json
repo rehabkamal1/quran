@@ -1,0 +1,26 @@
+{
+  "number": 108,
+  "name": "سُورَةُ الكَوۡثَرِ",
+  "englishName": "Al-Kawthar",
+  "revelationType": "Meccan",
+  "ayahs": [
+    {
+      "number": 6205,
+      "numberInSurah": 1,
+      "juz": 30,
+      "text": "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ إِنَّآ أَعْطَيْنَٰكَ ٱلْكَوْثَرَ"
+    },
+    {
+      "number": 6206,
+      "numberInSurah": 2,
+      "juz": 30,
+      "text": "فَصَلِّ لِرَبِّكَ وَٱنْحَرْ"
+    },
+    {
+      "number": 6207,
+      "numberInSurah": 3,
+      "juz": 30,
+      "text": "إِنَّ شَانِئَكَ هُوَ ٱلْأَبْتَرُ"
+    }
+  ]
+}

@@ -37,38 +37,53 @@ export const Prayer: React.FC = () => {
   const { adhanEnabled, toggleAdhan, playTestAdhan, isPlaying, stopAdhan } = useAdhan();
   const [nextPrayer, setNextPrayer] = useState<{ name: string; timeLeft: string; progress: number } | null>(null);
 
-  // Try fetching by location or fallback to city
+  // Try fetching by location or fallback to city (caching coordinates to avoid prompt on page load)
+  const loadTimings = async (forceGeoPrompt = false) => {
+    setLoading(true);
+    
+    const cachedLat = localStorage.getItem('prayer_lat');
+    const cachedLng = localStorage.getItem('prayer_lng');
+    
+    if (useLocation && cachedLat && cachedLng && !forceGeoPrompt) {
+      // Use cached coordinates to avoid triggering browser geolocation prompt
+      const lat = parseFloat(cachedLat);
+      const lng = parseFloat(cachedLng);
+      const data = await prayerApi.getTimingsByCoordinates(lat, lng);
+      if (data) setTimings(data);
+      setLoading(false);
+    } else if ((useLocation || forceGeoPrompt) && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          localStorage.setItem('prayer_use_location', 'true');
+          localStorage.setItem('prayer_lat', String(latitude));
+          localStorage.setItem('prayer_lng', String(longitude));
+          setUseLocation(true);
+          const data = await prayerApi.getTimingsByCoordinates(latitude, longitude);
+          if (data) setTimings(data);
+          setLoading(false);
+        },
+        async () => {
+          // Fallback if denied
+          setUseLocation(false);
+          localStorage.setItem('prayer_use_location', 'false');
+          localStorage.removeItem('prayer_lat');
+          localStorage.removeItem('prayer_lng');
+          const data = await prayerApi.getTimingsByCity(selectedCity.id, selectedCity.country);
+          if (data) setTimings(data);
+          setLoading(false);
+        }
+      );
+    } else {
+      localStorage.setItem('prayer_use_location', 'false');
+      const data = await prayerApi.getTimingsByCity(selectedCity.id, selectedCity.country);
+      if (data) setTimings(data);
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchTimings = async () => {
-      setLoading(true);
-      if (useLocation && navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          async (position) => {
-            const { latitude, longitude } = position.coords;
-            localStorage.setItem('prayer_use_location', 'true');
-            localStorage.setItem('prayer_lat', String(latitude));
-            localStorage.setItem('prayer_lng', String(longitude));
-            const data = await prayerApi.getTimingsByCoordinates(latitude, longitude);
-            if (data) setTimings(data);
-            setLoading(false);
-          },
-          async () => {
-            // Fallback if denied
-            setUseLocation(false);
-            localStorage.setItem('prayer_use_location', 'false');
-            const data = await prayerApi.getTimingsByCity(selectedCity.id, selectedCity.country);
-            if (data) setTimings(data);
-            setLoading(false);
-          }
-        );
-      } else {
-        localStorage.setItem('prayer_use_location', 'false');
-        const data = await prayerApi.getTimingsByCity(selectedCity.id, selectedCity.country);
-        if (data) setTimings(data);
-        setLoading(false);
-      }
-    };
-    fetchTimings();
+    loadTimings();
   }, [useLocation, selectedCity]);
 
   // Update countdown to next prayer
@@ -202,8 +217,9 @@ export const Prayer: React.FC = () => {
           variant={useLocation ? 'primary' : 'outline'} 
           className="w-full sm:w-auto gap-2"
           onClick={() => {
-            setUseLocation(true);
             localStorage.setItem('prayer_use_location', 'true');
+            setUseLocation(true);
+            loadTimings(true); // Force location prompt
           }}
         >
           <MapPin size={20} />
