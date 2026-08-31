@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
-import { Search, Bookmark } from 'lucide-react';
+import { Search, Play, Pause, Bookmark } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { quranApi } from '../services/quranApi';
 import type { SurahMeta } from '../services/quranApi';
+import { useGlobalPlayer } from '../context/GlobalPlayerContext';
 
 export const Quran: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'surah' | 'juz'>('surah');
@@ -13,6 +14,7 @@ export const Quran: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   const navigate = useNavigate();
+  const { playFullSurah, isPlaying, surahNumber: globalSurahNumber, isFullSurahMode, togglePlayPause } = useGlobalPlayer();
 
   useEffect(() => {
     const loadData = async () => {
@@ -72,28 +74,51 @@ export const Quran: React.FC = () => {
             </Card>
           ))
         ) : activeTab === 'surah' ? (
-          filteredSurahs.map((surah) => (
-            <Card 
-              key={surah.number} 
-              className="flex items-center justify-between p-4 cursor-pointer hover:border-primary/50 transition-colors"
-              onClick={() => navigate(`/quran/read/${surah.number}`)}
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                  {surah.number}
+          filteredSurahs.map((surah) => {
+            const isPlayingThisSurah = globalSurahNumber === surah.number && isFullSurahMode && isPlaying;
+
+            return (
+              <Card 
+                key={surah.number} 
+                className={`flex items-center justify-between p-4 cursor-pointer transition-colors ${
+                  isPlayingThisSurah ? 'border-2 border-primary bg-primary/5' : 'hover:border-primary/50'
+                }`}
+                onClick={() => navigate(`/quran/read/${surah.number}`)}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                    {surah.number}
+                  </div>
+                  <div>
+                    <h3 className="font-bold font-quran text-lg">{surah.name}</h3>
+                    <p className="text-xs text-text-muted">
+                      {surah.revelationType === 'Meccan' ? 'مكية' : 'مدنية'} • {surah.numberOfAyahs} آيات
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-bold font-quran text-lg">{surah.name}</h3>
-                  <p className="text-xs text-text-muted">
-                    {surah.revelationType === 'Meccan' ? 'مكية' : 'مدنية'} • {surah.numberOfAyahs} آيات
-                  </p>
-                </div>
-              </div>
-              <div className="text-text-muted">
-                <Bookmark size={20} />
-              </div>
-            </Card>
-          ))
+
+                {/* Quick Play Button */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (isPlayingThisSurah) {
+                      togglePlayPause();
+                    } else {
+                      playFullSurah(surah.number, surah.name);
+                    }
+                  }}
+                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+                    isPlayingThisSurah 
+                      ? 'bg-primary text-white shadow-md' 
+                      : 'bg-black/5 dark:bg-white/5 text-text-muted hover:text-primary hover:bg-primary/10'
+                  }`}
+                  title="تشغيل السورة كاملة"
+                >
+                  {isPlayingThisSurah ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
+                </button>
+              </Card>
+            );
+          })
         ) : (
           JUZ_DATA.map((juz) => {
             const juzSurahsList = JUZ_SURAHS[juz.number] || [];

@@ -47,6 +47,20 @@ export const audioService = {
     return `https://cdn.islamic.network/quran/audio/128/${reciter}/${globalAyahNumber}.mp3`;
   },
 
+  // Get full continuous Surah MP3 URL
+  getSurahAudioUrl: (surahNumber: number, reciterId?: string): string => {
+    const reciter = reciterId || audioService.getReciter();
+    const padded = surahNumber.toString().padStart(3, '0');
+    if (reciter === 'ar.mahermuaiqly') {
+      return `https://server12.mp3quran.net/maher/${padded}.mp3`;
+    }
+    if (reciter === 'ar.husary') {
+      return `https://server13.mp3quran.net/hssry/${padded}.mp3`;
+    }
+    // Default Alafasy
+    return `https://server8.mp3quran.net/afs/${padded}.mp3`;
+  },
+
   // Get continuous audio URL for Adhkar category
   getAdhkarCategoryAudioUrl: (categoryId: string, reciterId?: string): string | null => {
     const reciter = reciterId || audioService.getAdhkarReciter();

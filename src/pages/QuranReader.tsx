@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Play, Pause, Settings, ChevronRight, ChevronLeft, Bookmark, BookOpen, Share2, Check, Repeat } from 'lucide-react';
+import { Play, Pause, Settings, ChevronRight, ChevronLeft, Bookmark, BookOpen, Share2, Check, Repeat, Disc } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { quranApi } from '../services/quranApi';
 import type { SurahData, Ayah, TafsirData } from '../services/quranApi';
 import { audioService, RECITERS } from '../services/audioService';
 import { storage } from '../services/storage';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useGlobalPlayer } from '../context/GlobalPlayerContext';
 
 export const QuranReader: React.FC = () => {
   const { surahId } = useParams();
@@ -17,30 +18,27 @@ export const QuranReader: React.FC = () => {
   const [tafsir, setTafsir] = useState<TafsirData | null>(null);
   const [loading, setLoading] = useState(true);
   
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
-  const [activeAyah, setActiveAyah] = useState<number | null>(null);
   const [expandedTafsir, setExpandedTafsir] = useState<number | null>(null);
   const [bookmarkedAyahs, setBookmarkedAyahs] = useState<string[]>([]);
   const [copiedAyah, setCopiedAyah] = useState<number | null>(null);
   
-  // Repeat Ayah state
-  const [isRepeating, setIsRepeating] = useState(false);
-  const isRepeatingRef = useRef(isRepeating);
-
   const [showReciterMenu, setShowReciterMenu] = useState(false);
   const [currentReciter, setCurrentReciter] = useState(() => audioService.getReciter());
   
   const readerRef = useRef<HTMLDivElement>(null);
-  const surahRef = useRef<SurahData | null>(null);
 
-  useEffect(() => {
-    isRepeatingRef.current = isRepeating;
-  }, [isRepeating]);
-
-  useEffect(() => {
-    surahRef.current = surah;
-  }, [surah]);
+  // Global Player Context for Background Playback & Full Surah
+  const { 
+    isPlaying, 
+    surahNumber: globalSurahNumber, 
+    activeAyahNumber, 
+    isFullSurahMode, 
+    isRepeating, 
+    playFullSurah, 
+    playAyah, 
+    togglePlayPause,
+    toggleRepeat 
+  } = useGlobalPlayer();
 
   useEffect(() => {
     const loadData = async () => {
@@ -60,15 +58,6 @@ export const QuranReader: React.FC = () => {
     loadData();
   }, [surahId]);
 
-  // Clean up audio on unmount
-  useEffect(() => {
-    return () => {
-      if (currentAudio) {
-        currentAudio.pause();
-      }
-    };
-  }, [currentAudio]);
-
   useEffect(() => {
     if (!surah) return;
     const handleScroll = () => {
@@ -84,60 +73,19 @@ export const QuranReader: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [surah]);
 
-  const playAyah = (ayah: Ayah) => {
-    if (currentAudio) {
-      currentAudio.pause();
-    }
-    const url = audioService.getAyahAudioUrl(ayah.number, currentReciter);
-    const audio = new Audio(url);
-    
-    audio.play();
-    setIsPlaying(true);
-    setActiveAyah(ayah.numberInSurah);
-    setCurrentAudio(audio);
-
-    audio.onended = () => {
-      if (isRepeatingRef.current) {
-        // Replay current ayah
-        playAyah(ayah);
-      } else {
-        const nextAyah = surahRef.current?.ayahs.find(a => a.numberInSurah === ayah.numberInSurah + 1);
-        if (nextAyah) {
-          playAyah(nextAyah);
-        } else {
-          setIsPlaying(false);
-          setActiveAyah(null);
-        }
-      }
-    };
-  };
-
   const changeReciter = (reciterId: string) => {
     audioService.setReciter(reciterId);
     setCurrentReciter(reciterId);
     setShowReciterMenu(false);
     
-    // If currently playing, restart the active ayah with the new reciter!
-    if (isPlaying && activeAyah && surah) {
-      const ayah = surah.ayahs.find(a => a.numberInSurah === activeAyah);
-      if (ayah) {
-        playAyah(ayah);
+    // If currently playing in this surah, restart playback with the new reciter!
+    if (surah) {
+      if (isFullSurahMode) {
+        playFullSurah(surah.number, surah.name, reciterId);
+      } else if (activeAyahNumber) {
+        const ayah = surah.ayahs.find(a => a.numberInSurah === activeAyahNumber);
+        if (ayah) playAyah(surah.number, surah.name, ayah, surah.ayahs, reciterId);
       }
-    }
-  };
-
-  const togglePlay = () => {
-    if (isPlaying && currentAudio) {
-      currentAudio.pause();
-      setIsPlaying(false);
-    } else if (!isPlaying && currentAudio) {
-      currentAudio.play();
-      setIsPlaying(true);
-    } else if (!isPlaying && activeAyah && surah) {
-      const ayah = surah.ayahs.find(a => a.numberInSurah === activeAyah);
-      if (ayah) playAyah(ayah);
-    } else if (!isPlaying && surah && surah.ayahs.length > 0) {
-      playAyah(surah.ayahs[0]);
     }
   };
 
@@ -172,15 +120,6 @@ export const QuranReader: React.FC = () => {
     setTimeout(() => setCopiedAyah(null), 2000);
   };
 
-  const toggleRepeatForAyah = (ayah: Ayah) => {
-    if (activeAyah === ayah.numberInSurah) {
-      setIsRepeating(!isRepeating);
-    } else {
-      setIsRepeating(true);
-      playAyah(ayah);
-    }
-  };
-
   if (loading) {
     return <div className="flex items-center justify-center h-screen">جاري تحميل السورة...</div>;
   }
@@ -189,8 +128,10 @@ export const QuranReader: React.FC = () => {
     return <div className="flex items-center justify-center h-screen">السورة غير موجودة</div>;
   }
 
+  const isCurrentSurahActive = globalSurahNumber === surah.number;
+
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-24">
+    <div className="max-w-4xl mx-auto space-y-6 pb-28">
       
       {/* Sticky Header */}
       <div className="sticky top-0 md:top-20 z-40 bg-background/95 dark:bg-background-dark/95 backdrop-blur-md py-4 border-b border-black/5 dark:border-white/5 flex items-center justify-between">
@@ -203,8 +144,36 @@ export const QuranReader: React.FC = () => {
             {surah.revelationType === 'Meccan' ? 'مكية' : 'مدنية'} • {surah.ayahs.length} آيات
           </p>
         </div>
-        <div className="w-10"></div> {/* Spacer to keep center alignment */}
+        <div className="w-10"></div> {/* Spacer */}
       </div>
+
+      {/* Full Surah Play Bar */}
+      <Card className="p-4 bg-gradient-to-r from-emerald-500/10 via-primary/10 to-transparent border-primary/20 flex items-center justify-between shadow-sm">
+        <div className="flex items-center gap-3 text-right" dir="rtl">
+          <div className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center font-bold shadow-md">
+            <Disc size={20} className={isCurrentSurahActive && isFullSurahMode && isPlaying ? 'animate-spin' : ''} />
+          </div>
+          <div>
+            <h3 className="font-bold text-sm text-primary dark:text-primary-light">تشغيل السورة كاملة 🎧</h3>
+            <p className="text-xs text-text-muted">استماع متواصل للسورة كاملة بدون انقطاع</p>
+          </div>
+        </div>
+        <Button 
+          size="sm" 
+          variant="primary" 
+          className="bg-primary hover:bg-primary-dark text-white text-xs gap-1.5 shadow"
+          onClick={() => {
+            if (isCurrentSurahActive && isFullSurahMode) {
+              togglePlayPause();
+            } else {
+              playFullSurah(surah.number, surah.name, currentReciter);
+            }
+          }}
+        >
+          {isCurrentSurahActive && isFullSurahMode && isPlaying ? <Pause size={16} /> : <Play size={16} />}
+          <span>{isCurrentSurahActive && isFullSurahMode && isPlaying ? 'إيقاف مؤقت' : 'تشغيل كامل السورة'}</span>
+        </Button>
+      </Card>
 
       {/* Bismillah Header Card */}
       {surah.number !== 1 && surah.number !== 9 && (
@@ -222,7 +191,7 @@ export const QuranReader: React.FC = () => {
           }
 
           const isBookmarked = bookmarkedAyahs.includes(`${surah.number}-${ayah.numberInSurah}`);
-          const isActive = activeAyah === ayah.numberInSurah;
+          const isActive = isCurrentSurahActive && !isFullSurahMode && activeAyahNumber === ayah.numberInSurah;
           const isTafsirOpen = expandedTafsir === ayah.numberInSurah;
           const tafsirText = tafsir?.ayahs.find(t => t.numberInSurah === ayah.numberInSurah)?.text;
 
@@ -283,19 +252,9 @@ export const QuranReader: React.FC = () => {
                 <button 
                   onClick={() => {
                     if (isActive && isPlaying) {
-                      if (currentAudio) {
-                        currentAudio.pause();
-                        setIsPlaying(false);
-                      }
-                    } else if (isActive && !isPlaying) {
-                      if (currentAudio) {
-                        currentAudio.play();
-                        setIsPlaying(true);
-                      } else {
-                        playAyah(ayah);
-                      }
+                      togglePlayPause();
                     } else {
-                      playAyah(ayah);
+                      playAyah(surah.number, surah.name, ayah, surah.ayahs, currentReciter);
                     }
                   }} 
                   className={`flex flex-col items-center gap-1 text-[10px] sm:text-xs font-semibold transition-colors w-14 ${
@@ -308,7 +267,12 @@ export const QuranReader: React.FC = () => {
 
                 {/* Repeat Button */}
                 <button 
-                  onClick={() => toggleRepeatForAyah(ayah)} 
+                  onClick={() => {
+                    if (!isActive) {
+                      playAyah(surah.number, surah.name, ayah, surah.ayahs, currentReciter);
+                    }
+                    toggleRepeat();
+                  }} 
                   className={`flex flex-col items-center gap-1 text-[10px] sm:text-xs font-semibold transition-colors w-14 ${
                     isRepeating && isActive ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-text-muted dark:text-text-darkMuted hover:text-text-main'
                   }`}
@@ -396,7 +360,7 @@ export const QuranReader: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Global Bottom Audio Player */}
+      {/* Global Bottom Audio Control Bar */}
       <div className="fixed bottom-20 md:bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-card dark:bg-card-dark shadow-2xl rounded-full p-2 px-4 flex items-center justify-between border border-black/5 dark:border-white/10 z-50">
         
         {/* Repeat Toggle Button */}
@@ -404,7 +368,7 @@ export const QuranReader: React.FC = () => {
           variant="ghost" 
           size="icon" 
           className={`rounded-full transition-colors ${isRepeating ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold' : 'text-text-muted'}`}
-          onClick={() => setIsRepeating(!isRepeating)}
+          onClick={toggleRepeat}
           title={isRepeating ? 'إيقاف تكرار الآية' : 'تفعيل تكرار الآية'}
         >
           <Repeat size={20} />
@@ -421,9 +385,15 @@ export const QuranReader: React.FC = () => {
           variant="primary" 
           size="icon" 
           className="rounded-full w-14 h-14 shadow-lg scale-110"
-          onClick={togglePlay}
+          onClick={() => {
+            if (isCurrentSurahActive) {
+              togglePlayPause();
+            } else {
+              playFullSurah(surah.number, surah.name, currentReciter);
+            }
+          }}
         >
-          {isPlaying ? <Pause size={24} /> : <Play size={24} className="ml-1" />}
+          {isCurrentSurahActive && isPlaying ? <Pause size={24} /> : <Play size={24} className="ml-1" />}
         </Button>
 
         <Button 
