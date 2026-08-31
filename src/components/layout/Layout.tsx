@@ -4,6 +4,7 @@ import { Navbar } from './Navbar';
 import { MobileNav } from './MobileNav';
 import { useDarkMode } from '../../hooks/useDarkMode';
 import { InstallPWA } from '../ui/InstallPWA';
+import { AdhkarPromptModal } from '../ui/AdhkarPromptModal';
 import { useAdhan } from '../../context/AdhanContext';
 
 export const Layout: React.FC = () => {
@@ -19,6 +20,7 @@ export const Layout: React.FC = () => {
       </main>
       <MobileNav />
       <InstallPWA />
+      <AdhkarPromptModal />
 
       {/* Adhan Playing Alert Banner */}
       {isPlaying && (

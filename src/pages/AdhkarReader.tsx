@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { ChevronRight, CheckCircle2, Loader2, Play, Pause, Square, Settings, Music } from 'lucide-react';
@@ -85,6 +85,8 @@ const getWakeAudioId = (text: string): number | null => {
 export const AdhkarReader: React.FC = () => {
   const { categoryId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const autoPlayParam = searchParams.get('autoplay') === 'true';
   
   const [adhkarList, setAdhkarList] = useState<Dhikr[]>([]);
   const [loading, setLoading] = useState(true);
@@ -117,6 +119,16 @@ export const AdhkarReader: React.FC = () => {
     };
     loadData();
   }, [categoryId]);
+
+  // Handle Autoplay query parameter when data finish loading
+  useEffect(() => {
+    if (!loading && adhkarList.length > 0 && autoPlayParam && !isPlayingGlobal) {
+      const timer = setTimeout(() => {
+        toggleGlobalPlayback();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, adhkarList, autoPlayParam]);
 
   // Sync playback rate when changed
   useEffect(() => {

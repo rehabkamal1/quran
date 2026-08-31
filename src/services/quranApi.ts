@@ -79,6 +79,7 @@ export const quranApi = {
     // 2. Fetch specific split file
     try {
       const response = await fetch(`/data/quran/${surahNumber}.json`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
       splitSurahCache[surahNumber] = data;
       return data;
@@ -99,6 +100,7 @@ export const quranApi = {
     // 2. Fetch specific split file
     try {
       const response = await fetch(`/data/tafsir/${surahNumber}.json`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
       tafsirCache[surahNumber] = data;
       return data;
@@ -106,6 +108,7 @@ export const quranApi = {
       console.warn(`Failed to load split tafsir ${surahNumber}, falling back to full Tafsir:`, error);
       try {
         const response = await fetch('/data/tafsir.json');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data: TafsirData[] = await response.json();
         const surahTafsir = data.find(s => s.number === surahNumber) || null;
         if (surahTafsir) {

@@ -1,6 +1,6 @@
 export const RECITERS = [
   { id: 'ar.alafasy', name: 'مشاري العفاسي' },
-  { id: 'ar.abdulbasitmurattal', name: 'عبد الباسط عبد الصمد' },
+  { id: 'ar.abdulsamad', name: 'عبد الباسط عبد الصمد' },
   { id: 'ar.mahermuaiqly', name: 'ماهر المعيقلي' },
   { id: 'ar.husary', name: 'محمود خليل الحصري' }
 ];
@@ -8,7 +8,7 @@ export const RECITERS = [
 export const ADHAKAR_RECITERS = [
   { id: 'ar.alafasy', name: 'مشاري العفاسي' },
   { id: 'ar.farisabbad', name: 'فارس عباد' },
-  { id: 'ar.abdulbasitmurattal', name: 'عبد الباسط عبد الصمد (غير متوفر للأذكار - سيتم التشغيل بصوت العفاسي)' },
+  { id: 'ar.abdulsamad', name: 'عبد الباسط عبد الصمد (غير متوفر للأذكار - سيتم التشغيل بصوت العفاسي)' },
   { id: 'ar.mahermuaiqly', name: 'ماهر المعيقلي (غير متوفر للأذكار - سيتم التشغيل بصوت العفاسي)' },
   { id: 'ar.husary', name: 'محمود خليل الحصري (غير متوفر للأذكار - سيتم التشغيل بصوت العفاسي)' }
 ];
@@ -21,7 +21,12 @@ export const audioService = {
 
   // Get preferred reciter
   getReciter: (): string => {
-    return localStorage.getItem('preferred_reciter') || 'ar.alafasy';
+    const reciter = localStorage.getItem('preferred_reciter') || 'ar.alafasy';
+    if (reciter === 'ar.abdulbasitmurattal') {
+      audioService.setReciter('ar.abdulsamad');
+      return 'ar.abdulsamad';
+    }
+    return reciter;
   },
 
   // Save preferred Adhkar reciter

@@ -145,6 +145,65 @@ export const Home: React.FC = () => {
         </Card>
       </div>
 
+      {/* Active Time Adhkar Banner (Morning or Evening) */}
+      {(() => {
+        const hour = new Date().getHours();
+        const isMorningTime = hour >= 6 && hour < 11;
+        const isEveningTime = hour >= 16 && hour < 20;
+
+        if (isMorningTime) {
+          return (
+            <Card 
+              className="p-4 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border-amber-500/30 flex items-center justify-between shadow-sm cursor-pointer hover:border-amber-500/60 transition-all"
+              onClick={() => navigate('/adhkar/morning?autoplay=true')}
+            >
+              <div className="flex items-center gap-3 text-right" dir="rtl">
+                <span className="text-3xl animate-bounce">☀️</span>
+                <div>
+                  <h3 className="font-bold text-sm text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                    <span>حان الآن موعد أذكار الصباح</span>
+                  </h3>
+                  <p className="text-xs font-quran text-gray-700 dark:text-gray-300 mt-0.5">
+                    «أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ وَالْحَمْدُ لِلَّهِ...»
+                  </p>
+                </div>
+              </div>
+              <Button size="sm" variant="primary" className="bg-amber-600 hover:bg-amber-700 text-white shrink-0 gap-1 text-xs shadow">
+                <span>استمع الآن</span>
+                <span>🎧</span>
+              </Button>
+            </Card>
+          );
+        }
+
+        if (isEveningTime) {
+          return (
+            <Card 
+              className="p-4 bg-gradient-to-r from-indigo-500/10 via-indigo-500/5 to-transparent border-indigo-500/30 flex items-center justify-between shadow-sm cursor-pointer hover:border-indigo-500/60 transition-all"
+              onClick={() => navigate('/adhkar/evening?autoplay=true')}
+            >
+              <div className="flex items-center gap-3 text-right" dir="rtl">
+                <span className="text-3xl animate-pulse">🌙</span>
+                <div>
+                  <h3 className="font-bold text-sm text-indigo-700 dark:text-indigo-400 flex items-center gap-2">
+                    <span>حان الآن موعد أذكار المساء</span>
+                  </h3>
+                  <p className="text-xs font-quran text-gray-700 dark:text-gray-300 mt-0.5">
+                    «أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ وَالْحَمْدُ لِلَّهِ...»
+                  </p>
+                </div>
+              </div>
+              <Button size="sm" variant="primary" className="bg-indigo-600 hover:bg-indigo-700 text-white shrink-0 gap-1 text-xs shadow">
+                <span>استمع الآن</span>
+                <span>🎧</span>
+              </Button>
+            </Card>
+          );
+        }
+
+        return null;
+      })()}
+
       {/* Notification Toggle Card */}
       <Card className="p-4 bg-primary/10 dark:bg-primary-dark/20 border border-primary/20 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3 text-right" dir="rtl">

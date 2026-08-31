@@ -27,8 +27,8 @@ export const notificationService = {
       if (lastMorningAlert !== todayStr) {
         notificationService.showNotification(
           "أذكار الصباح ☀️",
-          "حان الآن موعد أذكار الصباح، اضغط لقراءتها والاستماع إليها.",
-          "/adhkar/reader/morning"
+          "«أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ وَالْحَمْدُ لِلَّهِ، لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ» 🎧 اضغط للاستماع المباشر للأذكار",
+          "/adhkar/morning?autoplay=true"
         );
         localStorage.setItem('last_morning_alert_date', todayStr);
       }
@@ -40,8 +40,8 @@ export const notificationService = {
       if (lastEveningAlert !== todayStr) {
         notificationService.showNotification(
           "أذكار المساء 🌙",
-          "حان الآن موعد أذكار المساء، اضغط لقراءتها والاستماع إليها.",
-          "/adhkar/reader/evening"
+          "«أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ وَالْحَمْدُ لِلَّهِ، لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ» 🎧 اضغط للاستماع المباشر للأذكار",
+          "/adhkar/evening?autoplay=true"
         );
         localStorage.setItem('last_evening_alert_date', todayStr);
       }
