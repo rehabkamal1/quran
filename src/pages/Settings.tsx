@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Moon, Sun, Headphones, Globe, Trash2 } from 'lucide-react';
+import { Moon, Sun, Headphones, Globe, Trash2, Heart, ChevronLeft } from 'lucide-react';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { audioService, RECITERS } from '../services/audioService';
+import { useNavigate } from 'react-router-dom';
 
 export const Settings: React.FC = () => {
   const { isDark, toggleDarkMode } = useDarkMode();
   const [selectedReciter, setSelectedReciter] = useState(audioService.getReciter());
+  const navigate = useNavigate();
 
   const handleReciterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const val = e.target.value;
@@ -53,6 +55,17 @@ export const Settings: React.FC = () => {
       <section className="space-y-4">
         <h2 className="text-xl font-bold text-text-muted">عام</h2>
         <Card className="divide-y divide-black/5 dark:divide-white/5 p-0">
+          <div 
+            onClick={() => navigate('/about')}
+            className="flex items-center justify-between p-4 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <Heart size={20} className="text-rose-500 fill-rose-500/20" />
+              <span className="font-semibold">عن المطور والدعم (صدقة جارية)</span>
+            </div>
+            <ChevronLeft size={20} className="text-text-muted" />
+          </div>
+
           <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
             <div className="flex items-center gap-3">
               <Globe size={20} className="text-primary" />

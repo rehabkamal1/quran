@@ -15,6 +15,7 @@ export const Navbar: React.FC = () => {
     { to: '/tasbih', label: 'التسبيح' },
     { to: '/prayer', label: 'الصلاة' },
     { to: '/khatmah', label: 'الختمة' },
+    { to: '/about', label: 'عن المنصة والدعم' },
   ];
 
   return (

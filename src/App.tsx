@@ -17,6 +17,7 @@ import { Khatmah } from './pages/Khatmah';
 import { Duas } from './pages/Duas';
 import { Ruqyah } from './pages/Ruqyah';
 import { Radio } from './pages/Radio';
+import { About } from './pages/About';
 
 import { AdhanProvider } from './context/AdhanContext';
 
@@ -41,6 +42,7 @@ function App() {
             <Route path="prayer" element={<Prayer />} />
             <Route path="qibla" element={<Qibla />} />
             <Route path="khatmah" element={<Khatmah />} />
+            <Route path="about" element={<About />} />
             <Route path="settings" element={<Settings />} />
           </Route>
         </Routes>

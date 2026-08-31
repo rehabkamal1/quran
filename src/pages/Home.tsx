@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
 import { 
   BookOpen, Compass, Heart, Activity, Bookmark, Clock, 
   Radio, ShieldCheck, ChevronLeft, Calendar 
@@ -272,6 +273,31 @@ export const Home: React.FC = () => {
         </div>
 
       </section>
+
+      {/* Support & Developer Banner Card */}
+      <Card 
+        className="p-5 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/20 cursor-pointer hover:border-primary/50 transition-all" 
+        onClick={() => navigate('/about')}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0 shadow-inner">
+              <Heart size={24} className="fill-rose-500/20" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-base text-primary dark:text-primary-light">عن المطور والدعم (صدقة جارية)</h3>
+              </div>
+              <p className="text-xs text-text-muted mt-0.5 font-sans">
+                تعرف على م. رحاب كمال مطورة المنصة وساهم في استمرار وتطوير الموقع
+              </p>
+            </div>
+          </div>
+          <Button variant="ghost" size="icon" className="text-primary">
+            <ChevronLeft size={20} />
+          </Button>
+        </div>
+      </Card>
 
       {/* Continue Reading Card (Moved to bottom like screenshot) */}
       <Card className="bg-primary-dark text-white border-0 shadow-lg cursor-pointer" onClick={() => lastRead ? navigate(`/quran/read/${lastRead.surah}`) : navigate(`/quran`)}>
