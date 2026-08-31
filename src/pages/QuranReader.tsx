@@ -320,30 +320,33 @@ export const QuranReader: React.FC = () => {
       {/* Floating Reciters Popover Menu */}
       <AnimatePresence>
         {showReciterMenu && (
-          <motion.div 
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="fixed bottom-36 md:bottom-24 left-1/2 -translate-x-1/2 w-[90%] max-w-xs bg-card dark:bg-card-dark shadow-2xl rounded-2xl p-3 border border-black/5 dark:border-white/10 z-50 flex flex-col gap-1"
-          >
-            <div className="text-xs font-bold text-text-muted px-3 py-2 border-b border-black/5 dark:border-white/5 text-right font-sans">
-              اختر القارئ:
-            </div>
-            {RECITERS.map(reciter => (
-              <button
-                key={reciter.id}
-                onClick={() => changeReciter(reciter.id)}
-                className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-right text-sm font-semibold transition-colors font-sans ${
-                  currentReciter === reciter.id
-                    ? 'bg-primary text-white'
-                    : 'text-text-main dark:text-text-darkMain hover:bg-black/5 dark:hover:bg-white/5'
-                }`}
-              >
-                <span>{reciter.name}</span>
-                {currentReciter === reciter.id && <Check size={16} />}
-              </button>
-            ))}
-          </motion.div>
+          <div className="fixed bottom-36 md:bottom-24 left-[5%] md:left-[calc(50%-210px)] z-50 w-[90%] max-w-[260px]">
+            <motion.div 
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              className="bg-white dark:bg-card-dark shadow-2xl rounded-2xl p-3 border border-black/5 dark:border-white/10 flex flex-col gap-1 w-full text-right"
+              dir="rtl"
+            >
+              <div className="text-xs font-bold text-text-muted px-3 py-2 border-b border-black/5 dark:border-white/5 text-right font-sans">
+                اختر القارئ:
+              </div>
+              {RECITERS.map(reciter => (
+                <button
+                  key={reciter.id}
+                  onClick={() => changeReciter(reciter.id)}
+                  className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-right text-sm font-semibold transition-colors font-sans ${
+                    currentReciter === reciter.id
+                      ? 'bg-primary text-white'
+                      : 'text-text-main dark:text-text-darkMain hover:bg-black/5 dark:hover:bg-white/5'
+                  }`}
+                >
+                  <span>{reciter.name}</span>
+                  {currentReciter === reciter.id && <Check size={16} />}
+                </button>
+              ))}
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
