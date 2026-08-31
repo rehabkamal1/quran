@@ -122,7 +122,7 @@ export const About: React.FC = () => {
                 </a>
 
                 <a 
-                  href="mailto:rehabkamal@example.com" 
+                  href="rehabkamalabdelhamed@gmail.com" 
                   className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-primary/10 text-sm font-semibold transition-colors"
                 >
                   <Mail size={16} className="text-primary" />
