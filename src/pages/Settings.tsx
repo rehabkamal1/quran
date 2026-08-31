@@ -1,20 +1,59 @@
 import React, { useState } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Moon, Sun, Headphones, Globe, Trash2, Heart, ChevronLeft } from 'lucide-react';
+import { Moon, Sun, Headphones, Globe, Trash2, Heart, ChevronLeft, BellRing } from 'lucide-react';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { audioService, RECITERS } from '../services/audioService';
+import { notificationService } from '../services/notificationService';
 import { useNavigate } from 'react-router-dom';
 
 export const Settings: React.FC = () => {
   const { isDark, toggleDarkMode } = useDarkMode();
   const [selectedReciter, setSelectedReciter] = useState(audioService.getReciter());
+  const [adhkarEnabled, setAdhkarEnabled] = useState(() => notificationService.isEnabled());
   const navigate = useNavigate();
 
   const handleReciterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const val = e.target.value;
     setSelectedReciter(val);
     audioService.setReciter(val);
+  };
+
+  const handleToggleAdhkarAlerts = async () => {
+    if (!adhkarEnabled) {
+      const granted = await notificationService.requestPermission();
+      if (granted) {
+        notificationService.setEnabled(true);
+        setAdhkarEnabled(true);
+      } else {
+        alert("يرجى إعطاء الإذن بالإشعارات من إعدادات المتصفح للاستفادة من تنبيهات الأذكار.");
+      }
+    } else {
+      notificationService.setEnabled(false);
+      setAdhkarEnabled(false);
+    }
+  };
+
+  const handleTestAdhkar = async (type: 'morning' | 'evening') => {
+    if ('Notification' in window && Notification.permission !== 'granted') {
+      await Notification.requestPermission();
+    }
+
+    if (type === 'morning') {
+      notificationService.showNotification(
+        "أذكار الصباح ☀️ (اختبار)",
+        "«أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ وَالْحَمْدُ لِلَّهِ، لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ» 🎧 اضغط للاستماع المباشر للأذكار",
+        "/adhkar/morning?autoplay=true"
+      );
+      navigate('/adhkar/morning?autoplay=true');
+    } else {
+      notificationService.showNotification(
+        "أذكار المساء 🌙 (اختبار)",
+        "«أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ وَالْحَمْدُ لِلَّهِ، لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ» 🎧 اضغط للاستماع المباشر للأذكار",
+        "/adhkar/evening?autoplay=true"
+      );
+      navigate('/adhkar/evening?autoplay=true');
+    }
   };
 
   return (
@@ -48,6 +87,50 @@ export const Settings: React.FC = () => {
                 <option key={r.id} value={r.id}>{r.name}</option>
               ))}
             </select>
+          </div>
+        </Card>
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="text-xl font-bold text-text-muted">إشعارات الأذكار والتنبيهات</h2>
+        <Card className="p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <BellRing size={20} className="text-primary" />
+              <div>
+                <div className="font-semibold">تنبيهات أذكار الصباح والمساء</div>
+                <div className="text-xs text-text-muted">إرسال إشعار تفاعلي مع إمكانية الاستماع الفوري</div>
+              </div>
+            </div>
+            <Button 
+              variant={adhkarEnabled ? "primary" : "outline"} 
+              size="sm" 
+              onClick={handleToggleAdhkarAlerts}
+            >
+              {adhkarEnabled ? 'مفعّلة' : 'تفعيل الإشعارات'}
+            </Button>
+          </div>
+
+          <div className="border-t border-black/5 dark:border-white/5 pt-3 flex flex-wrap items-center justify-between gap-2">
+            <span className="text-xs font-bold text-text-muted">اختبار التنبيه الفوري الآن:</span>
+            <div className="flex gap-2">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="text-xs gap-1 border-amber-500/50 text-amber-700 dark:text-amber-300 hover:bg-amber-500/10"
+                onClick={() => handleTestAdhkar('morning')}
+              >
+                <Sun size={14} /> ☀️ أذكار الصباح
+              </Button>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="text-xs gap-1 border-indigo-500/50 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500/10"
+                onClick={() => handleTestAdhkar('evening')}
+              >
+                <Moon size={14} /> 🌙 أذكار المساء
+              </Button>
+            </div>
           </div>
         </Card>
       </section>
