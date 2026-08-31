@@ -12,7 +12,6 @@ const DEFAULT_STATIONS: RadioStation[] = [
   { id: 1, name: 'إذاعة القران الكريم - القاهرة', url: 'https://stream.radiojar.com/8shnrn40cv8uv' },
   { id: 2, name: 'إذاعة القرآن الكريم - مكة المكرمة', url: 'https://backup.qurango.net/radio/makkah' },
   { id: 3, name: 'إذاعة مشاري العفاسي', url: 'https://backup.qurango.net/radio/mishary_alafasi' },
-  { id: 4, name: 'إذاعة عبد الباسط عبد الصمد', url: 'https://backup.qurango.net/radio/abdulbasit_abdulsamad_mojawwad' },
   { id: 5, name: 'إذاعة ماهر المعيقلي', url: 'https://backup.qurango.net/radio/maher' },
   { id: 6, name: 'إذاعة محمود خليل الحصري', url: 'https://backup.qurango.net/radio/hussary' },
 ];
