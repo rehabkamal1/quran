@@ -53,6 +53,11 @@ export const Home: React.FC = () => {
   const [duaOfDay, setDuaOfDay] = useState('');
   const [alertsEnabled, setAlertsEnabled] = useState(() => notificationService.isEnabled());
 
+  // Modal states
+  const [showStreakModal, setShowStreakModal] = useState(false);
+  const [showRamadanModal, setShowRamadanModal] = useState(false);
+  const [ramadanCountdown, setRamadanCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
   useEffect(() => {
     setLastRead(storage.getLastRead());
 
@@ -63,7 +68,28 @@ export const Home: React.FC = () => {
 
     // Check and trigger reminder if schedule is met
     notificationService.checkAndTriggerReminder();
-    
+
+    // Ramadan countdown logic (estimated target: Ramadan 1448 AH ~ February 7, 2027)
+    const updateCountdown = () => {
+      const now = new Date().getTime();
+      let targetDate = new Date('2027-02-07T00:00:00').getTime();
+      if (now > targetDate) {
+        targetDate = new Date('2028-01-28T00:00:00').getTime();
+      }
+      const diff = targetDate - now;
+
+      if (diff > 0) {
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        setRamadanCountdown({ days, hours, minutes, seconds });
+      }
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+
     // Set a random daily ayah
     const loadDaily = async () => {
       try {
@@ -81,6 +107,8 @@ export const Home: React.FC = () => {
       }
     };
     loadDaily();
+
+    return () => clearInterval(interval);
   }, []);
 
   const toggleNotifications = async () => {
@@ -124,22 +152,34 @@ export const Home: React.FC = () => {
 
       {/* Daily Stats (Mini Dashboard) */}
       <div className="grid grid-cols-2 gap-4">
-        <Card className="p-4 flex items-center gap-4 bg-white dark:bg-card-dark border-0 shadow-sm">
-          <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600">
+        <Card 
+          className="p-4 flex items-center gap-4 bg-white dark:bg-card-dark border-0 shadow-sm cursor-pointer hover:shadow-md hover:scale-[1.02] transition-all group"
+          onClick={() => setShowStreakModal(true)}
+        >
+          <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
             <span className="font-bold text-xl">14</span>
           </div>
           <div>
-            <h3 className="font-bold">يومي</h3>
+            <h3 className="font-bold flex items-center gap-1">
+              <span>يومي</span>
+              <ChevronLeft size={14} className="text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </h3>
             <p className="text-xs text-text-muted">مواظبة 14 يوم</p>
           </div>
         </Card>
         
-        <Card className="p-4 flex items-center gap-4 bg-amber-50 dark:bg-amber-900/10 border-0 shadow-sm">
-          <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600">
+        <Card 
+          className="p-4 flex items-center gap-4 bg-amber-50 dark:bg-amber-900/10 border-0 shadow-sm cursor-pointer hover:shadow-md hover:scale-[1.02] transition-all group"
+          onClick={() => setShowRamadanModal(true)}
+        >
+          <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 group-hover:bg-amber-500 group-hover:text-white transition-colors">
             <span className="font-bold text-xl">🌙</span>
           </div>
           <div>
-            <h3 className="font-bold text-amber-700 dark:text-amber-500">رمضان</h3>
+            <h3 className="font-bold text-amber-700 dark:text-amber-500 flex items-center gap-1">
+              <span>رمضان</span>
+              <ChevronLeft size={14} className="text-amber-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </h3>
             <p className="text-xs text-amber-600/70 dark:text-amber-500/70">المناسبة القادمة</p>
           </div>
         </Card>
@@ -371,6 +411,150 @@ export const Home: React.FC = () => {
           </div>
         </div>
       </Card>
+
+      {/* Streak Modal (مواظبة 14 يوم) */}
+      {showStreakModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setShowStreakModal(false)}>
+          <div className="bg-white dark:bg-card-dark rounded-3xl max-w-md w-full p-6 space-y-6 shadow-2xl border border-primary/20" onClick={(e) => e.stopPropagation()} dir="rtl">
+            <div className="flex items-center justify-between border-b pb-4 border-gray-100 dark:border-gray-800">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center font-bold text-xl shadow-lg shadow-emerald-500/30">
+                  🔥
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg text-gray-900 dark:text-white">سجل المواظبة اليومية</h3>
+                  <p className="text-xs text-text-muted">أنت مواظب منذ 14 يوماً متتالية!</p>
+                </div>
+              </div>
+              <button onClick={() => setShowStreakModal(false)} className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
+                ✕
+              </button>
+            </div>
+
+            {/* Streak Grid (Last 14 days) */}
+            <div>
+              <h4 className="text-sm font-bold mb-3 text-gray-700 dark:text-gray-300">أيام المواظبة الـ 14 الأخيرة:</h4>
+              <div className="grid grid-cols-7 gap-2 text-center">
+                {Array.from({ length: 14 }).map((_, i) => (
+                  <div key={i} className="flex flex-col items-center gap-1">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-bold text-xs shadow-sm">
+                      ✓
+                    </div>
+                    <span className="text-[10px] text-text-muted">يوم {i + 1}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Detailed Stats */}
+            <div className="space-y-3 bg-emerald-50 dark:bg-emerald-950/30 p-4 rounded-2xl border border-emerald-500/20">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600 dark:text-gray-300">📖 القراءة اليومية:</span>
+                <span className="font-bold text-emerald-700 dark:text-emerald-400">مكتملة ✨</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600 dark:text-gray-300">📿 أذكار الصباح والمساء:</span>
+                <span className="font-bold text-emerald-700 dark:text-emerald-400">مكتملة ✨</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600 dark:text-gray-300">⏱️ إجمالي دقائق العبادة:</span>
+                <span className="font-bold text-emerald-700 dark:text-emerald-400">45 دقيقة / يوم</span>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { setShowStreakModal(false); navigate('/khatmah'); }}>
+                متابعة الختمة 📖
+              </Button>
+              <Button variant="secondary" className="w-full" onClick={() => { setShowStreakModal(false); navigate('/adhkar'); }}>
+                قراءة الأذكار 📿
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Ramadan Modal (رمضان - المناسبة القادمة) */}
+      {showRamadanModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setShowRamadanModal(false)}>
+          <div className="bg-white dark:bg-card-dark rounded-3xl max-w-md w-full p-6 space-y-6 shadow-2xl border border-amber-500/30" onClick={(e) => e.stopPropagation()} dir="rtl">
+            
+            <div className="flex items-center justify-between border-b pb-4 border-gray-100 dark:border-gray-800">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center font-bold text-2xl shadow-lg shadow-amber-500/30 animate-pulse">
+                  🌙
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg text-amber-700 dark:text-amber-400">العد التنازلي لرمضان المبارك</h3>
+                  <p className="text-xs text-text-muted">اللهم بلغنا رمضان ووفقنا فيه للصيام والقيام</p>
+                </div>
+              </div>
+              <button onClick={() => setShowRamadanModal(false)} className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
+                ✕
+              </button>
+            </div>
+
+            {/* Ramadan Countdown Banner */}
+            <div className="bg-gradient-to-br from-amber-500 to-amber-700 text-white p-6 rounded-2xl text-center space-y-4 shadow-xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 left-0 bottom-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.2),transparent)] pointer-events-none" />
+              <p className="text-xs text-amber-100 font-bold">المتبقي على بداية شهر رمضان المبارك (1448 هـ):</p>
+              
+              <div className="grid grid-cols-4 gap-2">
+                <div className="bg-white/20 backdrop-blur-md p-3 rounded-xl">
+                  <span className="block text-2xl font-bold font-mono">{ramadanCountdown.days}</span>
+                  <span className="text-[10px] text-amber-100">يوم</span>
+                </div>
+                <div className="bg-white/20 backdrop-blur-md p-3 rounded-xl">
+                  <span className="block text-2xl font-bold font-mono">{ramadanCountdown.hours}</span>
+                  <span className="text-[10px] text-amber-100">ساعة</span>
+                </div>
+                <div className="bg-white/20 backdrop-blur-md p-3 rounded-xl">
+                  <span className="block text-2xl font-bold font-mono">{ramadanCountdown.minutes}</span>
+                  <span className="text-[10px] text-amber-100">دقيقة</span>
+                </div>
+                <div className="bg-white/20 backdrop-blur-md p-3 rounded-xl">
+                  <span className="block text-2xl font-bold font-mono">{ramadanCountdown.seconds}</span>
+                  <span className="text-[10px] text-amber-100">ثانية</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Upcoming Islamic Occasions */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300">المناسبات الإسلامية القادمة:</h4>
+              <div className="space-y-2 text-xs">
+                <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-500/20 flex items-center justify-between">
+                  <span className="font-bold text-amber-800 dark:text-amber-300">🌙 شهر رمضان المبارك</span>
+                  <span className="text-amber-600 dark:text-amber-400">1 رمضان 1448 هـ</span>
+                </div>
+                <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800 flex items-center justify-between">
+                  <span className="font-bold text-gray-700 dark:text-gray-300">🕌 عيد الفطر المبارك</span>
+                  <span className="text-text-muted">1 شوال 1448 هـ</span>
+                </div>
+                <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800 flex items-center justify-between">
+                  <span className="font-bold text-gray-700 dark:text-gray-300">🏔️ يوم عرفة</span>
+                  <span className="text-text-muted">9 ذو الحجة 1448 هـ</span>
+                </div>
+                <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800 flex items-center justify-between">
+                  <span className="font-bold text-gray-700 dark:text-gray-300">🕋 عيد الأضحى المبارك</span>
+                  <span className="text-text-muted">10 ذو الحجة 1448 هـ</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex gap-3">
+              <Button className="w-full bg-amber-600 hover:bg-amber-700 text-white" onClick={() => { setShowRamadanModal(false); navigate('/khatmah'); }}>
+                تجهيز الختمة لرمضان 📖
+              </Button>
+              <Button variant="secondary" className="w-full" onClick={() => setShowRamadanModal(false)}>
+                إغلاق
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       
     </div>
   );
