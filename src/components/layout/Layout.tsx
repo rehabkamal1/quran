@@ -6,11 +6,24 @@ import { useDarkMode } from '../../hooks/useDarkMode';
 import { InstallPWA } from '../ui/InstallPWA';
 import { AdhkarPromptModal } from '../ui/AdhkarPromptModal';
 import { useAdhan } from '../../context/AdhanContext';
+import { notificationService } from '../../services/notificationService';
 
 export const Layout: React.FC = () => {
   // Initialize dark mode on app load
   useDarkMode();
   const { isPlaying, currentPrayerName, stopAdhan } = useAdhan();
+
+  React.useEffect(() => {
+    // Initial check
+    notificationService.checkAndTriggerReminder();
+
+    // Check every minute
+    const interval = setInterval(() => {
+      notificationService.checkAndTriggerReminder();
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="min-h-screen pb-16 md:pb-0 flex flex-col relative">

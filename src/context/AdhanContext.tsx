@@ -151,6 +151,14 @@ export const AdhanProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (lastPlayedRef.current !== playKey) {
             lastPlayedRef.current = playKey;
             playAdhan(prayer.name);
+            
+            import('../services/notificationService').then(({ notificationService }) => {
+              notificationService.showNotification(
+                `حان الآن موعد أذان ${prayer.name}`,
+                "حي على الصلاة، حي على الفلاح",
+                "/prayer"
+              );
+            });
           }
         }
       }
