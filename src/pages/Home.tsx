@@ -245,24 +245,44 @@ export const Home: React.FC = () => {
       })()}
 
       {/* Notification Toggle Card */}
-      <Card className="p-4 bg-primary/10 dark:bg-primary-dark/20 border border-primary/20 flex items-center justify-between shadow-sm">
-        <div className="flex items-center gap-3 text-right" dir="rtl">
-          <span className="text-2xl">🔔</span>
-          <div>
-            <h3 className="font-bold text-sm text-primary dark:text-primary-light">تنبيهات الأذكار التلقائية</h3>
-            <p className="text-xs text-text-muted">تنبيه يومي بمواعيد أذكار الصباح والمساء</p>
+      <Card className="p-4 bg-primary/10 dark:bg-primary-dark/20 border border-primary/20 flex flex-col shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 text-right" dir="rtl">
+            <span className="text-2xl">🔔</span>
+            <div>
+              <h3 className="font-bold text-sm text-primary dark:text-primary-light">تنبيهات الأذكار التلقائية</h3>
+              <p className="text-xs text-text-muted">تنبيه يومي بمواعيد أذكار الصباح والمساء</p>
+            </div>
           </div>
+          <button
+            onClick={toggleNotifications}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+              alertsEnabled
+                ? 'bg-primary text-white hover:bg-primary-dark'
+                : 'bg-black/10 dark:bg-white/10 text-text-muted hover:bg-black/20 dark:hover:bg-white/20'
+            }`}
+          >
+            {alertsEnabled ? 'مفعلة' : 'تفعيل'}
+          </button>
         </div>
-        <button
-          onClick={toggleNotifications}
-          className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
-            alertsEnabled
-              ? 'bg-primary text-white hover:bg-primary-dark'
-              : 'bg-black/10 dark:bg-white/10 text-text-muted hover:bg-black/20 dark:hover:bg-white/20'
-          }`}
-        >
-          {alertsEnabled ? 'مفعلة' : 'تفعيل'}
-        </button>
+        
+        {alertsEnabled && (
+          <div className="mt-3 pt-3 border-t border-primary/10 text-center">
+            <button
+              onClick={async () => {
+                const isSupported = await notificationService.scheduleDelayedNotification();
+                if (isSupported) {
+                  alert("تم جدولة الإشعار بنجاح! 🎉\n\nيمكنك الآن الخروج من الموقع وإغلاقه تماماً، وسيظهر الإشعار بعد دقيقتين إن شاء الله.");
+                } else {
+                  alert("تم جدولة الإشعار بعد دقيقتين.\n\n⚠️ ملاحظة: متصفحك أو جهازك لا يدعم ظهور الإشعارات والموقع مغلق تماماً (وهذا طبيعي في بعض أجهزة الآيفون أو المتصفحات غير كروم). \nلذا يُرجى فقط الخروج لشاشة الهاتف الرئيسية (Home) وترك الموقع يعمل في الخلفية لترى الإشعار.");
+                }
+              }}
+              className="text-xs text-primary dark:text-primary-light underline hover:text-primary-dark transition-colors"
+            >
+              اختبار ظهور الإشعارات بعد دقيقتين (في الخلفية) ⏱️
+            </button>
+          </div>
+        )}
       </Card>
 
       {/* Daily Highlights (إشراقات اليوم) */}

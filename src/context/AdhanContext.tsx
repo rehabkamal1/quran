@@ -72,6 +72,13 @@ export const AdhanProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const playTestAdhan = () => {
     playAdhan('تجربة الأذان');
+    import('../services/notificationService').then(({ notificationService }) => {
+      notificationService.showNotification(
+        "تجربة إشعار الأذان 🕌",
+        "هذا إشعار تجريبي للتأكد من عمل تنبيهات الصلاة بنجاح.",
+        "/prayer"
+      );
+    });
   };
 
   // Monitor prayer times
