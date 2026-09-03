@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { 
-  BookOpen, Compass, Heart, Activity, Bookmark, Clock, 
-  Radio, ShieldCheck, ChevronLeft, Calendar 
+import {
+  BookOpen, Compass, Heart, Activity, Bookmark, Clock,
+  Radio, ShieldCheck, ChevronLeft, Calendar
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { storage } from '../services/storage';
@@ -48,7 +48,7 @@ const getDayOfYear = (): number => {
 export const Home: React.FC = () => {
   const navigate = useNavigate();
   const [lastRead, setLastRead] = useState<LastRead | null>(null);
-  const [dailyAyah, setDailyAyah] = useState<{text: string, surah: string}>({text: '', surah: ''});
+  const [dailyAyah, setDailyAyah] = useState<{ text: string, surah: string }>({ text: '', surah: '' });
   const [dhikrOfDay, setDhikrOfDay] = useState('');
   const [duaOfDay, setDuaOfDay] = useState('');
   const [alertsEnabled, setAlertsEnabled] = useState(() => notificationService.isEnabled());
@@ -133,7 +133,7 @@ export const Home: React.FC = () => {
 
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24">
-      
+
       {/* Header section */}
       <section className="flex items-center justify-between">
         <div>
@@ -152,7 +152,7 @@ export const Home: React.FC = () => {
 
       {/* Daily Stats (Mini Dashboard) */}
       <div className="grid grid-cols-2 gap-4">
-        <Card 
+        <Card
           className="p-4 flex items-center gap-4 bg-white dark:bg-card-dark border-0 shadow-sm cursor-pointer hover:shadow-md hover:scale-[1.02] transition-all group"
           onClick={() => setShowStreakModal(true)}
         >
@@ -167,8 +167,8 @@ export const Home: React.FC = () => {
             <p className="text-xs text-text-muted">مواظبة 14 يوم</p>
           </div>
         </Card>
-        
-        <Card 
+
+        <Card
           className="p-4 flex items-center gap-4 bg-amber-50 dark:bg-amber-900/10 border-0 shadow-sm cursor-pointer hover:shadow-md hover:scale-[1.02] transition-all group"
           onClick={() => setShowRamadanModal(true)}
         >
@@ -193,7 +193,7 @@ export const Home: React.FC = () => {
 
         if (isMorningTime) {
           return (
-            <Card 
+            <Card
               className="p-4 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border-amber-500/30 flex items-center justify-between shadow-sm cursor-pointer hover:border-amber-500/60 transition-all"
               onClick={() => navigate('/adhkar/morning?autoplay=true')}
             >
@@ -218,7 +218,7 @@ export const Home: React.FC = () => {
 
         if (isEveningTime) {
           return (
-            <Card 
+            <Card
               className="p-4 bg-gradient-to-r from-indigo-500/10 via-indigo-500/5 to-transparent border-indigo-500/30 flex items-center justify-between shadow-sm cursor-pointer hover:border-indigo-500/60 transition-all"
               onClick={() => navigate('/adhkar/evening?autoplay=true')}
             >
@@ -245,50 +245,29 @@ export const Home: React.FC = () => {
       })()}
 
       {/* Notification Toggle Card */}
-      <Card className="p-4 bg-primary/10 dark:bg-primary-dark/20 border border-primary/20 flex flex-col shadow-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 text-right" dir="rtl">
-            <span className="text-2xl">🔔</span>
-            <div>
-              <h3 className="font-bold text-sm text-primary dark:text-primary-light">تنبيهات الأذكار التلقائية</h3>
-              <p className="text-xs text-text-muted">تنبيه يومي بمواعيد أذكار الصباح والمساء</p>
-            </div>
+      <Card className="p-4 bg-primary/10 dark:bg-primary-dark/20 border border-primary/20 flex items-center justify-between shadow-sm">
+        <div className="flex items-center gap-3 text-right" dir="rtl">
+          <span className="text-2xl">🔔</span>
+          <div>
+            <h3 className="font-bold text-sm text-primary dark:text-primary-light">تنبيهات الأذكار التلقائية</h3>
+            <p className="text-xs text-text-muted">تنبيه يومي بمواعيد أذكار الصباح والمساء</p>
           </div>
-          <button
-            onClick={toggleNotifications}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
-              alertsEnabled
-                ? 'bg-primary text-white hover:bg-primary-dark'
-                : 'bg-black/10 dark:bg-white/10 text-text-muted hover:bg-black/20 dark:hover:bg-white/20'
-            }`}
-          >
-            {alertsEnabled ? 'مفعلة' : 'تفعيل'}
-          </button>
         </div>
-        
-        {alertsEnabled && (
-          <div className="mt-3 pt-3 border-t border-primary/10 text-center">
-            <button
-              onClick={async () => {
-                const isSupported = await notificationService.scheduleDelayedNotification();
-                if (isSupported) {
-                  alert("تم جدولة الإشعار بنجاح! 🎉\n\nيمكنك الآن الخروج من الموقع وإغلاقه تماماً، وسيظهر الإشعار بعد دقيقتين إن شاء الله.");
-                } else {
-                  alert("تم جدولة الإشعار بعد دقيقتين.\n\n⚠️ ملاحظة: متصفحك أو جهازك لا يدعم ظهور الإشعارات والموقع مغلق تماماً (وهذا طبيعي في بعض أجهزة الآيفون أو المتصفحات غير كروم). \nلذا يُرجى فقط الخروج لشاشة الهاتف الرئيسية (Home) وترك الموقع يعمل في الخلفية لترى الإشعار.");
-                }
-              }}
-              className="text-xs text-primary dark:text-primary-light underline hover:text-primary-dark transition-colors"
-            >
-              اختبار ظهور الإشعارات بعد دقيقتين (في الخلفية) ⏱️
-            </button>
-          </div>
-        )}
+        <button
+          onClick={toggleNotifications}
+          className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${alertsEnabled
+              ? 'bg-primary text-white hover:bg-primary-dark'
+              : 'bg-black/10 dark:bg-white/10 text-text-muted hover:bg-black/20 dark:hover:bg-white/20'
+            }`}
+        >
+          {alertsEnabled ? 'مفعلة' : 'تفعيل'}
+        </button>
       </Card>
 
       {/* Daily Highlights (إشراقات اليوم) */}
       <section className="space-y-4">
         <h2 className="text-2xl font-bold border-r-4 border-primary pr-3">إشراقات اليوم</h2>
-        
+
         <Card className="p-6 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border-0">
           <div className="flex items-center gap-2 text-amber-700 dark:text-amber-500 mb-4 font-bold">
             <BookOpen size={20} /> آية من القرآن
@@ -306,7 +285,7 @@ export const Home: React.FC = () => {
             </div>
             <p className="font-quran text-xl text-gray-800 dark:text-gray-200">{dhikrOfDay || 'أَسْتَغْفِرُ اللَّهَ وَأَتُوبُ إِلَيْهِ'}</p>
           </Card>
-          
+
           <Card className="p-6 bg-rose-50 dark:bg-rose-900/20 border-0 flex flex-col justify-center items-center text-center">
             <div className="flex items-center gap-2 text-rose-700 dark:text-rose-500 font-bold mb-3">
               <Heart size={18} /> دعاء اليوم
@@ -318,7 +297,7 @@ export const Home: React.FC = () => {
 
       {/* Main Categories like Original App */}
       <section className="space-y-6">
-        
+
         {/* Category: كل يوم */}
         <div>
           <h2 className="text-2xl font-bold border-r-4 border-primary pr-3 mb-4">كل يوم</h2>
@@ -394,8 +373,8 @@ export const Home: React.FC = () => {
       </section>
 
       {/* Support & Developer Banner Card */}
-      <Card 
-        className="p-5 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/20 cursor-pointer hover:border-primary/50 transition-all" 
+      <Card
+        className="p-5 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/20 cursor-pointer hover:border-primary/50 transition-all"
         onClick={() => navigate('/about')}
       >
         <div className="flex items-center justify-between">
@@ -498,7 +477,7 @@ export const Home: React.FC = () => {
       {showRamadanModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setShowRamadanModal(false)}>
           <div className="bg-white dark:bg-card-dark rounded-3xl max-w-md w-full p-6 space-y-6 shadow-2xl border border-amber-500/30" onClick={(e) => e.stopPropagation()} dir="rtl">
-            
+
             <div className="flex items-center justify-between border-b pb-4 border-gray-100 dark:border-gray-800">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center font-bold text-2xl shadow-lg shadow-amber-500/30 animate-pulse">
@@ -518,7 +497,7 @@ export const Home: React.FC = () => {
             <div className="bg-gradient-to-br from-amber-500 to-amber-700 text-white p-6 rounded-2xl text-center space-y-4 shadow-xl relative overflow-hidden">
               <div className="absolute top-0 right-0 left-0 bottom-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.2),transparent)] pointer-events-none" />
               <p className="text-xs text-amber-100 font-bold">المتبقي على بداية شهر رمضان المبارك (1448 هـ):</p>
-              
+
               <div className="grid grid-cols-4 gap-2">
                 <div className="bg-white/20 backdrop-blur-md p-3 rounded-xl">
                   <span className="block text-2xl font-bold font-mono">{ramadanCountdown.days}</span>
@@ -575,7 +554,7 @@ export const Home: React.FC = () => {
         </div>
       )}
 
-      
+
     </div>
   );
 };

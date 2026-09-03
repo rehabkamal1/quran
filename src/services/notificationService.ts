@@ -6,8 +6,8 @@ export const notificationService = {
   },
 
   isEnabled: (): boolean => {
-    return localStorage.getItem('adhkar_alerts_enabled') === 'true' && 
-           ('Notification' in window && Notification.permission === 'granted');
+    return localStorage.getItem('adhkar_alerts_enabled') === 'true' &&
+      ('Notification' in window && Notification.permission === 'granted');
   },
 
   setEnabled: (enabled: boolean) => {
@@ -71,44 +71,5 @@ export const notificationService = {
         window.location.href = urlPath;
       };
     }
-  },
-
-  scheduleDelayedNotification: async (): Promise<boolean> => {
-    if (!('Notification' in window) || Notification.permission !== 'granted') return false;
-    
-    if (!('serviceWorker' in navigator)) return false;
-    const registration = await navigator.serviceWorker.ready;
-
-    const timestamp = Date.now() + 2 * 60 * 1000; // 2 minutes from now
-
-    const options: any = {
-      body: "هذا إشعار تجريبي يظهر والموقع مغلق أو في الخلفية للتأكد من عمل الميزة بنجاح!",
-      icon: '/logo.png',
-      badge: '/logo.png',
-      dir: 'rtl' as NotificationDirection,
-      tag: 'adhkar-reminder',
-      requireInteraction: true
-    };
-
-    if ('showTrigger' in Notification.prototype) {
-      // @ts-ignore
-      options.showTrigger = new TimestampTrigger(timestamp);
-      try {
-        await registration.showNotification("إشعار الخلفية (مجدول) 🌙", options);
-        return true; // Supported and scheduled natively
-      } catch (e) {
-        console.error("Trigger failed", e);
-      }
-    } 
-    
-    // Fallback: standard setTimeout (works only if tab is left open in background)
-    setTimeout(() => {
-      notificationService.showNotification(
-        "إشعار الخلفية (مجدول) 🌙",
-        "هذا إشعار تجريبي.. (ملاحظة: جهازك/متصفحك لا يدعم الإشعارات والموقع مغلق تماماً، لذلك ظهر لأن الموقع تُرك يعمل بالخلفية).",
-        "/adhkar"
-      );
-    }, 2 * 60 * 1000);
-    return false;
   }
 };

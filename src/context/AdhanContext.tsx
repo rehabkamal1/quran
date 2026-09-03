@@ -32,14 +32,22 @@ export const AdhanProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const lastPlayedRef = useRef<string>(''); // format: 'YYYY-MM-DD:prayerKey'
 
   const toggleAdhan = () => {
-    setAdhanEnabled(prev => {
-      const next = !prev;
-      localStorage.setItem('adhan_enabled', String(next));
-      if (!next) {
-        stopAdhan();
-      }
-      return next;
-    });
+    if (!adhanEnabled) {
+      import('../services/notificationService').then(async ({ notificationService }) => {
+        const granted = await notificationService.requestPermission();
+        if (granted) {
+          notificationService.showNotification("تم تفعيل تنبيهات الأذان 🕌", "سيصلك إشعار عند دخول وقت الصلاة", "/prayer");
+        } else {
+          alert("يرجى السماح بالإشعارات من إعدادات المتصفح لضمان وصول تنبيه الأذان حتى لو كان الموقع في الخلفية.");
+        }
+      });
+      setAdhanEnabled(true);
+      localStorage.setItem('adhan_enabled', 'true');
+    } else {
+      setAdhanEnabled(false);
+      localStorage.setItem('adhan_enabled', 'false');
+      stopAdhan();
+    }
   };
 
   const playAdhan = (prayerName: string = '') => {
@@ -72,13 +80,6 @@ export const AdhanProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const playTestAdhan = () => {
     playAdhan('تجربة الأذان');
-    import('../services/notificationService').then(({ notificationService }) => {
-      notificationService.showNotification(
-        "تجربة إشعار الأذان 🕌",
-        "هذا إشعار تجريبي للتأكد من عمل تنبيهات الصلاة بنجاح.",
-        "/prayer"
-      );
-    });
   };
 
   // Monitor prayer times
@@ -103,13 +104,13 @@ export const AdhanProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const cachedLat = localStorage.getItem('prayer_lat');
         const cachedLng = localStorage.getItem('prayer_lng');
         const latLngStr = (cachedLat && cachedLng) ? `${cachedLat},${cachedLng}` : '';
-        
+
         if (cacheStr) {
           const cache = JSON.parse(cacheStr);
           const isSameDate = cache.date === todayStr;
           const isSameLocationMode = cache.useLocation === useLocation;
           const isSameLocationData = useLocation ? cache.latLng === latLngStr : cache.cityId === city.id;
-          
+
           if (isSameDate && isSameLocationMode && isSameLocationData && cache.timings) {
             timings = cache.timings;
           }
@@ -158,7 +159,7 @@ export const AdhanProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (lastPlayedRef.current !== playKey) {
             lastPlayedRef.current = playKey;
             playAdhan(prayer.name);
-            
+
             import('../services/notificationService').then(({ notificationService }) => {
               notificationService.showNotification(
                 `حان الآن موعد أذان ${prayer.name}`,
