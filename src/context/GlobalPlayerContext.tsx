@@ -41,10 +41,62 @@ export const GlobalPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ 
     isRepeatingRef.current = isRepeating;
   }, [isRepeating]);
 
+  // Clean up audio on provider unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
+  // Get or create persistent HTMLAudioElement (reused to bypass mobile autoplay policies)
+  const getAudioElement = (): HTMLAudioElement => {
+    if (!audioRef.current) {
+      const audio = new Audio();
+      audio.playsInline = true;
+      audio.preload = 'auto';
+      audioRef.current = audio;
+    }
+    return audioRef.current;
+  };
+
+  // Sync Mobile MediaSession for Lock Screen / Background Playback
+  const updateMediaSession = (title: string, artist: string) => {
+    if ('mediaSession' in navigator) {
+      try {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title,
+          artist,
+          album: 'القرآن الكريم والأذكار',
+          artwork: [
+            { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+            { src: '/icon-512.png', sizes: '512x512', type: 'image/png' }
+          ]
+        });
+        navigator.mediaSession.setActionHandler('play', () => {
+          if (audioRef.current) {
+            audioRef.current.play();
+            setIsPlaying(true);
+          }
+        });
+        navigator.mediaSession.setActionHandler('pause', () => {
+          if (audioRef.current) {
+            audioRef.current.pause();
+            setIsPlaying(false);
+          }
+        });
+      } catch (e) {
+        console.warn('MediaSession initialization error:', e);
+      }
+    }
+  };
+
   const stopAudio = () => {
     if (audioRef.current) {
       audioRef.current.pause();
-      audioRef.current = null;
+      audioRef.current.removeAttribute('src');
     }
     setIsPlaying(false);
     setCurrentTitle('');
@@ -70,22 +122,24 @@ export const GlobalPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   // Play Full Surah (Continuous audio file)
   const playFullSurah = (sNum: number, sName: string, reciterId?: string) => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
+    const audio = getAudioElement();
+    audio.pause();
 
     const reciterKey = reciterId || audioService.getReciter();
     const reciterName = RECITERS.find(r => r.id === reciterKey)?.name || 'الشيخ القارئ';
     const url = audioService.getSurahAudioUrl(sNum, reciterKey);
 
-    const audio = new Audio(url);
-    audioRef.current = audio;
+    audio.src = url;
     
     setSurahNumber(sNum);
     setActiveAyahNumber(null);
     setIsFullSurahMode(true);
-    setCurrentTitle(`سورة ${sName}`);
-    setSubtitle(`تلاوة كاملة • ${reciterName}`);
+    const titleStr = `سورة ${sName}`;
+    const subStr = `تلاوة كاملة • ${reciterName}`;
+    setCurrentTitle(titleStr);
+    setSubtitle(subStr);
+
+    updateMediaSession(titleStr, reciterName);
 
     audio.play().then(() => setIsPlaying(true)).catch(err => console.error('Full Surah Play Error:', err));
 
@@ -100,9 +154,8 @@ export const GlobalPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   // Play specific Ayah (Verse-by-Verse audio)
   const playAyah = (sNum: number, sName: string, ayah: Ayah, surahAyahs: Ayah[], reciterId?: string) => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
+    const audio = getAudioElement();
+    audio.pause();
 
     currentSurahAyahsRef.current = surahAyahs;
     currentSurahNameRef.current = sName;
@@ -112,14 +165,17 @@ export const GlobalPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const reciterName = RECITERS.find(r => r.id === reciterKey)?.name || 'الشيخ القارئ';
     const url = audioService.getAyahAudioUrl(ayah.number, reciterKey);
 
-    const audio = new Audio(url);
-    audioRef.current = audio;
+    audio.src = url;
 
     setSurahNumber(sNum);
     setActiveAyahNumber(ayah.numberInSurah);
     setIsFullSurahMode(false);
-    setCurrentTitle(`سورة ${sName}`);
-    setSubtitle(`الآية ${ayah.numberInSurah} • ${reciterName}`);
+    const titleStr = `سورة ${sName}`;
+    const subStr = `الآية ${ayah.numberInSurah} • ${reciterName}`;
+    setCurrentTitle(titleStr);
+    setSubtitle(subStr);
+
+    updateMediaSession(`${titleStr} - آية ${ayah.numberInSurah}`, reciterName);
 
     audio.play().then(() => setIsPlaying(true)).catch(err => console.error('Ayah Play Error:', err));
 
@@ -139,18 +195,18 @@ export const GlobalPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   // Generic custom URL audio player (e.g. Adhkar)
   const playAudioUrl = (url: string, title: string, sub: string) => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
+    const audio = getAudioElement();
+    audio.pause();
 
-    const audio = new Audio(url);
-    audioRef.current = audio;
+    audio.src = url;
 
     setSurahNumber(null);
     setActiveAyahNumber(null);
     setIsFullSurahMode(false);
     setCurrentTitle(title);
     setSubtitle(sub);
+
+    updateMediaSession(title, sub);
 
     audio.play().then(() => setIsPlaying(true)).catch(err => console.error('Audio URL Play Error:', err));
 

@@ -55,7 +55,7 @@ export const audioService = {
       return `https://server12.mp3quran.net/maher/${padded}.mp3`;
     }
     if (reciter === 'ar.husary') {
-      return `https://server13.mp3quran.net/hssry/${padded}.mp3`;
+      return `https://server13.mp3quran.net/husr/${padded}.mp3`;
     }
     // Default Alafasy
     return `https://server8.mp3quran.net/afs/${padded}.mp3`;
