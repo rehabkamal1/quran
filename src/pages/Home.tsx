@@ -307,11 +307,10 @@ export const Home: React.FC = () => {
             {prayerData.schedule.map((prayer) => (
               <div
                 key={prayer.name}
-                className={`flex flex-col items-center gap-1 flex-1 py-1.5 px-1 rounded-xl transition-all ${
-                  prayer.active
+                className={`flex flex-col items-center gap-1 flex-1 py-1.5 px-1 rounded-xl transition-all ${prayer.active
                     ? 'bg-primary/25 border border-primary/50 text-primary-light font-bold scale-105 shadow-md'
                     : 'text-white/70 hover:text-white'
-                }`}
+                  }`}
               >
                 <div className={`h-2 w-2 rounded-full ${prayer.active ? 'bg-primary animate-ping' : 'bg-white/30'}`} />
                 <span className="font-bold text-[11px]">{prayer.name}</span>
@@ -428,8 +427,8 @@ export const Home: React.FC = () => {
         <button
           onClick={toggleNotifications}
           className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${alertsEnabled
-              ? 'bg-primary text-white hover:bg-primary-dark'
-              : 'bg-black/10 dark:bg-white/10 text-text-muted hover:bg-black/20 dark:hover:bg-white/20'
+            ? 'bg-primary text-white hover:bg-primary-dark'
+            : 'bg-black/10 dark:bg-white/10 text-text-muted hover:bg-black/20 dark:hover:bg-white/20'
             }`}
         >
           {alertsEnabled ? 'مفعلة' : 'تفعيل'}
@@ -467,77 +466,162 @@ export const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Main Categories like Original App */}
-      <section className="space-y-6">
+      {/* Main Categories like Reference App */}
+      <section className="space-y-8" dir="rtl">
 
         {/* Category: كل يوم */}
         <div>
-          <h2 className="text-2xl font-bold border-r-4 border-primary pr-3 mb-4">كل يوم</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
-            <button onClick={() => navigate('/prayer')} className="flex flex-col items-center justify-center p-4 md:p-6 bg-blue-500 text-white rounded-2xl shadow-md hover:scale-105 transition-all h-32 md:h-40 group">
-              <Clock size={32} className="mb-2 md:mb-3 md:w-10 md:h-10 text-[#FCD34D] drop-shadow-md group-hover:scale-110 transition-transform" />
-              <span className="font-bold text-sm md:text-base">مواقيت الصلاة</span>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="w-1.5 h-6 rounded-full bg-primary" />
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">كل يوم</h2>
+          </div>
+          <div className="grid grid-cols-3 gap-3 md:gap-4">
+            <button
+              onClick={() => navigate('/duas')}
+              className="relative flex flex-col justify-between p-3.5 md:p-5 rounded-[26px] bg-gradient-to-br from-[#ff3a75] via-[#ff4d84] to-[#f42b67] text-white shadow-lg shadow-pink-500/20 hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 group overflow-hidden h-32 md:h-36"
+            >
+              <div className="absolute -bottom-4 -right-4 w-16 h-16 bg-white/10 rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform" />
+              <div className="self-end w-10 h-10 md:w-11 md:h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/25 flex items-center justify-center text-white shadow-inner group-hover:bg-white/30 transition-all">
+                <Heart size={20} className="text-white drop-shadow" />
+              </div>
+              <span className="font-bold text-sm md:text-base text-white text-right drop-shadow-sm">الأدعية</span>
             </button>
-            <button onClick={() => navigate('/adhkar')} className="flex flex-col items-center justify-center p-4 md:p-6 bg-indigo-500 text-white rounded-2xl shadow-md hover:scale-105 transition-all h-32 md:h-40 group">
-              <Heart size={32} className="mb-2 md:mb-3 md:w-10 md:h-10 text-[#FCD34D] drop-shadow-md group-hover:scale-110 transition-transform" />
-              <span className="font-bold text-sm md:text-base">الأذكار</span>
+
+            <button
+              onClick={() => navigate('/adhkar')}
+              className="relative flex flex-col justify-between p-3.5 md:p-5 rounded-[26px] bg-gradient-to-br from-[#6b72e6] via-[#757ce8] to-[#595fd9] text-white shadow-lg shadow-indigo-500/20 hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 group overflow-hidden h-32 md:h-36"
+            >
+              <div className="absolute -bottom-4 -right-4 w-16 h-16 bg-white/10 rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform" />
+              <div className="self-end w-10 h-10 md:w-11 md:h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/25 flex items-center justify-center text-white shadow-inner group-hover:bg-white/30 transition-all">
+                <Bookmark size={20} className="text-white drop-shadow" />
+              </div>
+              <span className="font-bold text-sm md:text-base text-white text-right drop-shadow-sm">الأذكار</span>
             </button>
-            <button onClick={() => navigate('/duas')} className="flex flex-col items-center justify-center p-4 md:p-6 bg-rose-500 text-white rounded-2xl shadow-md hover:scale-105 transition-all h-32 md:h-40 group">
-              <Heart size={32} className="mb-2 md:mb-3 md:w-10 md:h-10 text-[#FCD34D] drop-shadow-md group-hover:scale-110 transition-transform" />
-              <span className="font-bold text-sm md:text-base">الأدعية</span>
+
+            <button
+              onClick={() => navigate('/prayer')}
+              className="relative flex flex-col justify-between p-3.5 md:p-5 rounded-[26px] bg-gradient-to-br from-[#2c8be7] via-[#3a96f0] to-[#1e7ad6] text-white shadow-lg shadow-blue-500/20 hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 group overflow-hidden h-32 md:h-36"
+            >
+              <div className="absolute -bottom-4 -right-4 w-16 h-16 bg-white/10 rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform" />
+              <div className="self-end w-10 h-10 md:w-11 md:h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/25 flex items-center justify-center text-white shadow-inner group-hover:bg-white/30 transition-all">
+                <Clock size={20} className="text-white drop-shadow" />
+              </div>
+              <span className="font-bold text-sm md:text-base text-white text-right drop-shadow-sm">مواقيت الصلاة</span>
             </button>
           </div>
         </div>
 
         {/* Category: اسمع وسبح */}
         <div>
-          <h2 className="text-2xl font-bold border-r-4 border-primary pr-3 mb-4">اسمع وسبح</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
-            <button onClick={() => navigate('/quran')} className="flex flex-col items-center justify-center p-4 md:p-6 bg-emerald-500 text-white rounded-2xl shadow-md hover:scale-105 transition-all h-32 md:h-40 group">
-              <BookOpen size={32} className="mb-2 md:mb-3 md:w-10 md:h-10 text-[#FCD34D] drop-shadow-md group-hover:scale-110 transition-transform" />
-              <span className="font-bold text-sm md:text-base">القرآن</span>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="w-1.5 h-6 rounded-full bg-primary" />
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">اسمع وسبّح</h2>
+          </div>
+          <div className="grid grid-cols-3 gap-3 md:gap-4">
+            <button
+              onClick={() => navigate('/tasbih')}
+              className="relative flex flex-col justify-between p-3.5 md:p-5 rounded-[26px] bg-gradient-to-br from-[#bd59d4] via-[#c664dd] to-[#ab42c4] text-white shadow-lg shadow-purple-500/20 hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 group overflow-hidden h-32 md:h-36"
+            >
+              <div className="absolute -bottom-4 -right-4 w-16 h-16 bg-white/10 rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform" />
+              <div className="self-end w-10 h-10 md:w-11 md:h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/25 flex items-center justify-center text-white shadow-inner group-hover:bg-white/30 transition-all">
+                <Activity size={20} className="text-white drop-shadow" />
+              </div>
+              <span className="font-bold text-sm md:text-base text-white text-right drop-shadow-sm">السبحة</span>
             </button>
-            <button onClick={() => navigate('/radio')} className="flex flex-col items-center justify-center p-4 md:p-6 bg-teal-500 text-white rounded-2xl shadow-md hover:scale-105 transition-all h-32 md:h-40 group">
-              <Radio size={32} className="mb-2 md:mb-3 md:w-10 md:h-10 text-[#FCD34D] drop-shadow-md group-hover:scale-110 transition-transform" />
-              <span className="font-bold text-sm md:text-base">الراديو</span>
+
+            <button
+              onClick={() => navigate('/radio')}
+              className="relative flex flex-col justify-between p-3.5 md:p-5 rounded-[26px] bg-gradient-to-br from-[#38bfa7] via-[#42c9b1] to-[#25a891] text-white shadow-lg shadow-teal-500/20 hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 group overflow-hidden h-32 md:h-36"
+            >
+              <div className="absolute -bottom-4 -right-4 w-16 h-16 bg-white/10 rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform" />
+              <div className="self-end w-10 h-10 md:w-11 md:h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/25 flex items-center justify-center text-white shadow-inner group-hover:bg-white/30 transition-all">
+                <Radio size={20} className="text-white drop-shadow" />
+              </div>
+              <span className="font-bold text-sm md:text-base text-white text-right drop-shadow-sm">الراديو</span>
             </button>
-            <button onClick={() => navigate('/tasbih')} className="flex flex-col items-center justify-center p-4 md:p-6 bg-fuchsia-500 text-white rounded-2xl shadow-md hover:scale-105 transition-all h-32 md:h-40 group">
-              <Activity size={32} className="mb-2 md:mb-3 md:w-10 md:h-10 text-[#FCD34D] drop-shadow-md group-hover:scale-110 transition-transform" />
-              <span className="font-bold text-sm md:text-base">السبحة</span>
+
+            <button
+              onClick={() => navigate('/quran')}
+              className="relative flex flex-col justify-between p-3.5 md:p-5 rounded-[26px] bg-gradient-to-br from-[#1696ab] via-[#20a1b6] to-[#0f8092] text-white shadow-lg shadow-cyan-500/20 hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 group overflow-hidden h-32 md:h-36"
+            >
+              <div className="absolute -bottom-4 -right-4 w-16 h-16 bg-white/10 rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform" />
+              <div className="self-end w-10 h-10 md:w-11 md:h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/25 flex items-center justify-center text-white shadow-inner group-hover:bg-white/30 transition-all">
+                <BookOpen size={20} className="text-white drop-shadow" />
+              </div>
+              <span className="font-bold text-sm md:text-base text-white text-right drop-shadow-sm">القُراء</span>
             </button>
           </div>
         </div>
 
         {/* Category: اقرأ وشاهد */}
         <div>
-          <h2 className="text-2xl font-bold border-r-4 border-primary pr-3 mb-4">اقرأ وشاهد</h2>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="w-1.5 h-6 rounded-full bg-primary" />
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">اقرأ وشاهد</h2>
+          </div>
           <div className="grid grid-cols-2 gap-3 md:gap-4">
-            <button onClick={() => navigate('/hadith')} className="flex flex-col items-center justify-center p-6 bg-amber-700 text-white rounded-2xl shadow-md hover:scale-105 transition-all h-32 md:h-40 group">
-              <BookOpen size={36} className="mb-3 md:w-12 md:h-12 text-[#FCD34D] drop-shadow-md group-hover:scale-110 transition-transform" />
-              <span className="font-bold text-lg md:text-xl">الأحاديث</span>
+            <button
+              onClick={() => navigate('/hadith')}
+              className="relative flex flex-col justify-between p-4 md:p-5 rounded-[26px] bg-gradient-to-br from-[#d97706] via-[#f59e0b] to-[#b45309] text-white shadow-lg shadow-amber-500/20 hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 group overflow-hidden h-32 md:h-36"
+            >
+              <div className="absolute -bottom-4 -right-4 w-16 h-16 bg-white/10 rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform" />
+              <div className="self-end w-10 h-10 md:w-11 md:h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/25 flex items-center justify-center text-white shadow-inner group-hover:bg-white/30 transition-all">
+                <BookOpen size={20} className="text-white drop-shadow" />
+              </div>
+              <span className="font-bold text-base md:text-lg text-white text-right drop-shadow-sm">الأحاديث النبوية</span>
             </button>
-            <button onClick={() => navigate('/stories')} className="flex flex-col items-center justify-center p-6 bg-slate-600 text-white rounded-2xl shadow-md hover:scale-105 transition-all h-32 md:h-40 group">
-              <Bookmark size={36} className="mb-3 md:w-12 md:h-12 text-[#FCD34D] drop-shadow-md group-hover:scale-110 transition-transform" />
-              <span className="font-bold text-lg md:text-xl">قصص القرآن</span>
+
+            <button
+              onClick={() => navigate('/stories')}
+              className="relative flex flex-col justify-between p-4 md:p-5 rounded-[26px] bg-gradient-to-br from-[#8b5cf6] via-[#a855f7] to-[#7c3aed] text-white shadow-lg shadow-purple-500/20 hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 group overflow-hidden h-32 md:h-36"
+            >
+              <div className="absolute -bottom-4 -right-4 w-16 h-16 bg-white/10 rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform" />
+              <div className="self-end w-10 h-10 md:w-11 md:h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/25 flex items-center justify-center text-white shadow-inner group-hover:bg-white/30 transition-all">
+                <Bookmark size={20} className="text-white drop-shadow" />
+              </div>
+              <span className="font-bold text-base md:text-lg text-white text-right drop-shadow-sm">قصص القرآن</span>
             </button>
           </div>
         </div>
 
         {/* Category: حين تحتاجها */}
         <div>
-          <h2 className="text-2xl font-bold border-r-4 border-primary pr-3 mb-4">حين تحتاجها</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
-            <button onClick={() => navigate('/qibla')} className="flex flex-col items-center justify-center p-4 md:p-6 bg-orange-500 text-white rounded-2xl shadow-md hover:scale-105 transition-all h-32 md:h-40 group">
-              <Compass size={32} className="mb-2 md:mb-3 md:w-10 md:h-10 text-[#FCD34D] drop-shadow-md group-hover:scale-110 transition-transform" />
-              <span className="font-bold text-sm md:text-base">القبلة</span>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="w-1.5 h-6 rounded-full bg-primary" />
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">حين تحتاجها</h2>
+          </div>
+          <div className="grid grid-cols-3 gap-3 md:gap-4">
+            <button
+              onClick={() => navigate('/ruqyah')}
+              className="relative flex flex-col justify-between p-3.5 md:p-5 rounded-[26px] bg-gradient-to-br from-[#16b59b] via-[#20c0a6] to-[#0fa28a] text-white shadow-lg shadow-teal-500/20 hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 group overflow-hidden h-32 md:h-36"
+            >
+              <div className="absolute -bottom-4 -right-4 w-16 h-16 bg-white/10 rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform" />
+              <div className="self-end w-10 h-10 md:w-11 md:h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/25 flex items-center justify-center text-white shadow-inner group-hover:bg-white/30 transition-all">
+                <ShieldCheck size={20} className="text-white drop-shadow" />
+              </div>
+              <span className="font-bold text-sm md:text-base text-white text-right drop-shadow-sm">الرقية الشرعية</span>
             </button>
-            <button onClick={() => navigate('/ruqyah')} className="flex flex-col items-center justify-center p-4 md:p-6 bg-cyan-600 text-white rounded-2xl shadow-md hover:scale-105 transition-all h-32 md:h-40 group">
-              <ShieldCheck size={32} className="mb-2 md:mb-3 md:w-10 md:h-10 text-[#FCD34D] drop-shadow-md group-hover:scale-110 transition-transform" />
-              <span className="font-bold text-sm md:text-base">الرقية الشرعية</span>
+
+            <button
+              onClick={() => navigate('/qibla')}
+              className="relative flex flex-col justify-between p-3.5 md:p-5 rounded-[26px] bg-gradient-to-br from-[#ff794d] via-[#ff865c] to-[#f26031] text-white shadow-lg shadow-orange-500/20 hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 group overflow-hidden h-32 md:h-36"
+            >
+              <div className="absolute -bottom-4 -right-4 w-16 h-16 bg-white/10 rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform" />
+              <div className="self-end w-10 h-10 md:w-11 md:h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/25 flex items-center justify-center text-white shadow-inner group-hover:bg-white/30 transition-all">
+                <Compass size={20} className="text-white drop-shadow" />
+              </div>
+              <span className="font-bold text-sm md:text-base text-white text-right drop-shadow-sm">القبلة</span>
             </button>
-            <button onClick={() => navigate('/khatmah')} className="flex flex-col items-center justify-center p-4 md:p-6 bg-primary text-white rounded-2xl shadow-md hover:scale-105 transition-all h-32 md:h-40 group">
-              <BookOpen size={32} className="mb-2 md:mb-3 md:w-10 md:h-10 text-[#FCD34D] drop-shadow-md group-hover:scale-110 transition-transform" />
-              <span className="font-bold text-sm md:text-base">خطة الختمة</span>
+
+            <button
+              onClick={() => navigate('/about')}
+              className="relative flex flex-col justify-between p-3.5 md:p-5 rounded-[26px] bg-gradient-to-br from-[#3ea647] via-[#49b352] to-[#2e9437] text-white shadow-lg shadow-green-500/20 hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 group overflow-hidden h-32 md:h-36"
+            >
+              <div className="absolute -bottom-4 -right-4 w-16 h-16 bg-white/10 rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform" />
+              <div className="self-end w-10 h-10 md:w-11 md:h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/25 flex items-center justify-center text-white shadow-inner group-hover:bg-white/30 transition-all">
+                <Heart size={20} className="text-white drop-shadow" />
+              </div>
+              <span className="font-bold text-sm md:text-base text-white text-right drop-shadow-sm">صدقة جارية</span>
             </button>
           </div>
         </div>
