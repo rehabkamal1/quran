@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Clock, MapPin, Volume2, VolumeX, Play, Square } from 'lucide-react';
+import { Clock, MapPin, Volume2, VolumeX } from 'lucide-react';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { prayerApi } from '../services/prayerApi';
 import type { PrayerTimes } from '../services/prayerApi';
@@ -34,7 +34,7 @@ export const Prayer: React.FC = () => {
     return CITIES.find(c => c.id === cityId) || CITIES[0];
   });
 
-  const { adhanEnabled, toggleAdhan, playTestAdhan, isPlaying, stopAdhan } = useAdhan();
+  const { adhanEnabled, toggleAdhan } = useAdhan();
   const [nextPrayer, setNextPrayer] = useState<{ name: string; timeLeft: string; progress: number } | null>(null);
 
   // Try fetching by location or fallback to city (caching coordinates to avoid prompt on page load)
@@ -253,24 +253,6 @@ export const Prayer: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
-          <Button
-            variant="outline"
-            className="gap-2 text-sm px-4"
-            onClick={isPlaying ? stopAdhan : playTestAdhan}
-          >
-            {isPlaying ? (
-              <>
-                <Square size={16} className="fill-current" />
-                إيقاف التجربة
-              </>
-            ) : (
-              <>
-                <Play size={16} className="fill-current" />
-                تجربة الأذان
-              </>
-            )}
-          </Button>
-
           <div dir="ltr">
             <button 
               onClick={toggleAdhan} 

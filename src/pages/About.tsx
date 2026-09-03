@@ -20,11 +20,11 @@ export const About: React.FC = () => {
   const [copiedInsta, setCopiedInsta] = useState(false);
   const [copiedAppUrl, setCopiedAppUrl] = useState(false);
 
-  const instaPayHandle = "rehab.kamal@instapay"; 
-  const vodafoneCashNumber = "01000000000"; 
+  const instaPayHandle = "فودافون كاش"; 
+  const vodafoneCashNumber = "01094312087"; 
 
   const handleCopyInsta = () => {
-    navigator.clipboard.writeText(`${instaPayHandle} / ${vodafoneCashNumber}`);
+    navigator.clipboard.writeText(`${vodafoneCashNumber}`);
     setCopiedInsta(true);
     setTimeout(() => setCopiedInsta(false), 2000);
   };
