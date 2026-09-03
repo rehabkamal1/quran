@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import {
@@ -9,6 +9,8 @@ import { useNavigate } from 'react-router-dom';
 import { storage } from '../services/storage';
 import type { LastRead } from '../services/storage';
 import { quranApi } from '../services/quranApi';
+import { prayerApi } from '../services/prayerApi';
+import type { PrayerTimes } from '../services/prayerApi';
 import { notificationService } from '../services/notificationService';
 
 const DAILY_DHIKRS = [
@@ -45,6 +47,18 @@ const getDayOfYear = (): number => {
   return Math.floor(diff / oneDay);
 };
 
+const parsePrayerTime = (timeStr: string, date: Date = new Date()): Date => {
+  if (!timeStr) return new Date();
+  // Strip timezone suffix like "(EEST)" or "(EST)" safely
+  const cleanTime = timeStr.split(' ')[0].trim();
+  const parts = cleanTime.split(':');
+  const hours = parseInt(parts[0], 10) || 0;
+  const minutes = parseInt(parts[1], 10) || 0;
+  const parsed = new Date(date);
+  parsed.setHours(hours, minutes, 0, 0);
+  return parsed;
+};
+
 export const Home: React.FC = () => {
   const navigate = useNavigate();
   const [lastRead, setLastRead] = useState<LastRead | null>(null);
@@ -53,23 +67,64 @@ export const Home: React.FC = () => {
   const [duaOfDay, setDuaOfDay] = useState('');
   const [alertsEnabled, setAlertsEnabled] = useState(() => notificationService.isEnabled());
 
+  // Dynamic Prayer Timer State
+  const [prayerTimings, setPrayerTimings] = useState<PrayerTimes | null>(null);
+  const [nowDate, setNowDate] = useState(() => new Date());
+
   // Modal states
   const [showStreakModal, setShowStreakModal] = useState(false);
   const [showRamadanModal, setShowRamadanModal] = useState(false);
   const [ramadanCountdown, setRamadanCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
+  // 1-second continuous live clock tick
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNowDate(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Fetch prayer timings on mount
   useEffect(() => {
     setLastRead(storage.getLastRead());
 
-    // Set deterministic Dhikr & Dua of the day
     const dayIndex = getDayOfYear();
     setDhikrOfDay(DAILY_DHIKRS[dayIndex % DAILY_DHIKRS.length]);
     setDuaOfDay(DAILY_DUAS[dayIndex % DAILY_DUAS.length]);
 
-    // Check and trigger reminder if schedule is met
     notificationService.checkAndTriggerReminder();
 
-    // Ramadan countdown logic (estimated target: Ramadan 1448 AH ~ February 7, 2027)
+    const fetchTimings = async () => {
+      try {
+        const useLocation = localStorage.getItem('prayer_use_location') !== 'false';
+        const selectedCity = localStorage.getItem('prayer_selected_city') || 'Makkah';
+        const cityCountry: Record<string, string> = {
+          Makkah: 'SA',
+          Madinah: 'SA',
+          Cairo: 'EG',
+          Dubai: 'AE',
+          Amman: 'JO',
+          Riyadh: 'SA',
+        };
+
+        const cachedLat = localStorage.getItem('prayer_lat');
+        const cachedLng = localStorage.getItem('prayer_lng');
+
+        let timings: PrayerTimes | null = null;
+        if (useLocation && cachedLat && cachedLng) {
+          timings = await prayerApi.getTimingsByCoordinates(Number(cachedLat), Number(cachedLng));
+        } else {
+          timings = await prayerApi.getTimingsByCity(selectedCity, cityCountry[selectedCity] || 'SA');
+        }
+        setPrayerTimings(timings);
+      } catch (error) {
+        console.error('Failed to load prayer timings:', error);
+      }
+    };
+
+    fetchTimings();
+
+    // Ramadan countdown logic
     const updateCountdown = () => {
       const now = new Date().getTime();
       let targetDate = new Date('2027-02-07T00:00:00').getTime();
@@ -108,8 +163,67 @@ export const Home: React.FC = () => {
     };
     loadDaily();
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+    };
   }, []);
+
+  // Compute next prayer and countdown dynamically every 1s
+  const prayerData = useMemo(() => {
+    if (!prayerTimings) return null;
+
+    const prayers = [
+      { name: 'الفجر', time: prayerTimings.Fajr },
+      { name: 'الظهر', time: prayerTimings.Dhuhr },
+      { name: 'العصر', time: prayerTimings.Asr },
+      { name: 'المغرب', time: prayerTimings.Maghrib },
+      { name: 'العشاء', time: prayerTimings.Isha },
+    ];
+
+    let nextPrayerItem: { name: string; time: string } | null = null;
+    let isTomorrow = false;
+
+    for (const prayer of prayers) {
+      const prayerDate = parsePrayerTime(prayer.time, nowDate);
+      if (prayerDate > nowDate) {
+        nextPrayerItem = prayer;
+        break;
+      }
+    }
+
+    if (!nextPrayerItem) {
+      nextPrayerItem = { name: 'الفجر', time: prayers[0].time };
+      isTomorrow = true;
+    }
+
+    const targetDate = parsePrayerTime(nextPrayerItem.time, nowDate);
+    if (isTomorrow) {
+      targetDate.setDate(targetDate.getDate() + 1);
+    }
+
+    const remainingMs = Math.max(0, targetDate.getTime() - nowDate.getTime());
+    const totalSeconds = Math.floor(remainingMs / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    const schedule = prayers.map((p) => ({
+      name: p.name,
+      time: p.time,
+      active: p.name === nextPrayerItem!.name
+    }));
+
+    return {
+      nextPrayer: {
+        name: nextPrayerItem.name,
+        time: nextPrayerItem.time,
+        hours,
+        minutes,
+        seconds
+      },
+      schedule
+    };
+  }, [prayerTimings, nowDate]);
 
   const toggleNotifications = async () => {
     if (alertsEnabled) {
@@ -149,6 +263,64 @@ export const Home: React.FC = () => {
           <img src="/logo.png" alt="Huda Logo" className="w-full h-full object-cover" />
         </div>
       </section>
+
+      {prayerData?.nextPrayer && (
+        <div className="rounded-[28px] border border-primary/30 bg-gradient-to-br from-[#0f2e28] via-[#143a32] to-[#0c221e] p-5 shadow-2xl relative overflow-hidden" dir="rtl">
+          {/* Background glow highlights */}
+          <div className="absolute -top-12 -left-12 w-40 h-40 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-12 -right-12 w-40 h-40 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+
+          {/* Header Tag */}
+          <div className="flex justify-center mb-3 relative z-10">
+            <span className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-4 py-1 text-xs font-bold text-primary-light backdrop-blur-md shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              الصلاة القادمة
+            </span>
+          </div>
+
+          {/* Title */}
+          <div className="text-center mb-5 relative z-10">
+            <h3 className="text-3xl sm:text-4xl font-extrabold text-white font-quran tracking-wide">
+              صلاة <span className="text-primary-light drop-shadow-sm">{prayerData.nextPrayer.name}</span>
+            </h3>
+            <p className="mt-1.5 text-xs text-white/80 font-sans">متبقي على الأذان</p>
+          </div>
+
+          {/* Live Dynamic Countdown */}
+          <div className="grid grid-cols-3 gap-3 mb-6 relative z-10" dir="rtl">
+            <div className="rounded-2xl border border-white/10 bg-black/30 backdrop-blur-md p-3 text-center transition-all hover:border-primary/40">
+              <div className="text-3xl font-extrabold text-white font-mono">{String(prayerData.nextPrayer.hours).padStart(2, '0')}</div>
+              <div className="mt-1 text-xs font-bold text-primary-light">ساعة</div>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-black/30 backdrop-blur-md p-3 text-center transition-all hover:border-primary/40">
+              <div className="text-3xl font-extrabold text-white font-mono">{String(prayerData.nextPrayer.minutes).padStart(2, '0')}</div>
+              <div className="mt-1 text-xs font-bold text-primary-light">دقيقة</div>
+            </div>
+            <div className="rounded-2xl border border-primary/50 bg-primary/15 backdrop-blur-md p-3 text-center transition-all ring-1 ring-primary/30">
+              <div className="text-3xl font-extrabold text-primary-light font-mono">{String(prayerData.nextPrayer.seconds).padStart(2, '0')}</div>
+              <div className="mt-1 text-xs font-bold text-primary-light">ثانية</div>
+            </div>
+          </div>
+
+          {/* Bottom Prayer Schedule */}
+          <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-2.5 border border-white/10 flex items-center justify-between gap-1 relative z-10" dir="rtl">
+            {prayerData.schedule.map((prayer) => (
+              <div
+                key={prayer.name}
+                className={`flex flex-col items-center gap-1 flex-1 py-1.5 px-1 rounded-xl transition-all ${
+                  prayer.active
+                    ? 'bg-primary/25 border border-primary/50 text-primary-light font-bold scale-105 shadow-md'
+                    : 'text-white/70 hover:text-white'
+                }`}
+              >
+                <div className={`h-2 w-2 rounded-full ${prayer.active ? 'bg-primary animate-ping' : 'bg-white/30'}`} />
+                <span className="font-bold text-[11px]">{prayer.name}</span>
+                <span className="text-[10px] opacity-80 font-mono" dir="ltr">{prayer.time}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Daily Stats (Mini Dashboard) */}
       <div className="grid grid-cols-2 gap-4">
