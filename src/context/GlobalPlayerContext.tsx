@@ -55,11 +55,27 @@ export const GlobalPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const getAudioElement = (): HTMLAudioElement => {
     if (!audioRef.current) {
       const audio = new Audio();
-      audio.playsInline = true;
+      audio.setAttribute('playsinline', 'true');
+      audio.setAttribute('webkit-playsinline', 'true');
       audio.preload = 'auto';
+      audio.crossOrigin = 'anonymous';
       audioRef.current = audio;
     }
     return audioRef.current;
+  };
+
+  const safePlayAudio = async (audio: HTMLAudioElement) => {
+    try {
+      audio.load();
+      await audio.play();
+      setIsPlaying(true);
+    } catch (err) {
+      console.warn('Audio play was blocked; retrying after load:', err);
+      setTimeout(() => {
+        audio.load();
+        audio.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+      }, 250);
+    }
   };
 
   // Sync Mobile MediaSession for Lock Screen / Background Playback
@@ -130,6 +146,7 @@ export const GlobalPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const url = audioService.getSurahAudioUrl(sNum, reciterKey);
 
     audio.src = url;
+    audio.load();
     
     setSurahNumber(sNum);
     setActiveAyahNumber(null);
@@ -141,7 +158,7 @@ export const GlobalPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     updateMediaSession(titleStr, reciterName);
 
-    audio.play().then(() => setIsPlaying(true)).catch(err => console.error('Full Surah Play Error:', err));
+    safePlayAudio(audio).catch(err => console.error('Full Surah Play Error:', err));
 
     audio.onended = () => {
       if (isRepeatingRef.current) {
@@ -166,6 +183,7 @@ export const GlobalPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const url = audioService.getAyahAudioUrl(ayah.number, reciterKey);
 
     audio.src = url;
+    audio.load();
 
     setSurahNumber(sNum);
     setActiveAyahNumber(ayah.numberInSurah);
@@ -177,7 +195,7 @@ export const GlobalPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     updateMediaSession(`${titleStr} - آية ${ayah.numberInSurah}`, reciterName);
 
-    audio.play().then(() => setIsPlaying(true)).catch(err => console.error('Ayah Play Error:', err));
+    safePlayAudio(audio).catch(err => console.error('Ayah Play Error:', err));
 
     audio.onended = () => {
       if (isRepeatingRef.current) {
@@ -199,6 +217,7 @@ export const GlobalPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ 
     audio.pause();
 
     audio.src = url;
+    audio.load();
 
     setSurahNumber(null);
     setActiveAyahNumber(null);
@@ -208,7 +227,7 @@ export const GlobalPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     updateMediaSession(title, sub);
 
-    audio.play().then(() => setIsPlaying(true)).catch(err => console.error('Audio URL Play Error:', err));
+    safePlayAudio(audio).catch(err => console.error('Audio URL Play Error:', err));
 
     audio.onended = () => {
       if (isRepeatingRef.current) {

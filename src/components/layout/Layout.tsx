@@ -14,15 +14,7 @@ export const Layout: React.FC = () => {
   const { isPlaying, currentPrayerName, stopAdhan } = useAdhan();
 
   React.useEffect(() => {
-    // Initial check
-    notificationService.checkAndTriggerReminder();
-
-    // Check every minute
-    const interval = setInterval(() => {
-      notificationService.checkAndTriggerReminder();
-    }, 60000);
-
-    return () => clearInterval(interval);
+    return notificationService.startReminderScheduler();
   }, []);
 
   return (

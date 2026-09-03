@@ -95,7 +95,7 @@ export const AdhanProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const city = CITIES.find(c => c.id === cityId) || CITIES[0];
 
       const now = new Date();
-      const todayStr = now.toISOString().split('T')[0];
+      const todayStr = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
 
       let timings: PrayerTimes | null = null;
 

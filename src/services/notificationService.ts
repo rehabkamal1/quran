@@ -1,3 +1,10 @@
+const getLocalDateKey = (date: Date = new Date()) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
 export const notificationService = {
   requestPermission: async (): Promise<boolean> => {
     if (!('Notification' in window)) return false;
@@ -19,7 +26,7 @@ export const notificationService = {
 
     const now = new Date();
     const hour = now.getHours();
-    const todayStr = now.toDateString();
+    const todayStr = getLocalDateKey(now);
 
     // Morning Reminder: Between 6:00 AM and 11:00 AM
     if (hour >= 6 && hour < 11) {
@@ -48,28 +55,58 @@ export const notificationService = {
     }
   },
 
+  startReminderScheduler: () => {
+    const run = () => notificationService.checkAndTriggerReminder();
+    run();
+
+    const interval = window.setInterval(run, 30000);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        run();
+      }
+    };
+
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', run);
+
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', run);
+    };
+  },
+
   showNotification: (title: string, body: string, urlPath: string) => {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
     const options = {
-      body: body,
+      body,
       icon: '/logo.png',
       badge: '/logo.png',
       dir: 'rtl' as NotificationDirection,
-      tag: 'adhkar-reminder',
+      tag: `${title}-${Date.now()}`,
       requireInteraction: true
     };
 
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then(registration => {
-        registration.showNotification(title, options);
-      });
-    } else {
-      const notification = new Notification(title, options);
-      notification.onclick = () => {
-        window.focus();
-        window.location.href = urlPath;
-      };
+      navigator.serviceWorker.ready
+        .then(registration => {
+          registration.showNotification(title, options);
+        })
+        .catch(() => {
+          const notification = new Notification(title, options);
+          notification.onclick = () => {
+            window.focus();
+            window.location.href = urlPath;
+          };
+        });
+      return;
     }
+
+    const notification = new Notification(title, options);
+    notification.onclick = () => {
+      window.focus();
+      window.location.href = urlPath;
+    };
   }
 };
