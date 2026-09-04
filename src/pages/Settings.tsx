@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Moon, Sun, Headphones, Globe, Trash2, Heart, ChevronLeft, BellRing } from 'lucide-react';
+import { Moon, Sun, Headphones, Globe, Trash2, Heart, ChevronLeft, BellRing, Volume2 } from 'lucide-react';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { audioService, RECITERS } from '../services/audioService';
 import { notificationService } from '../services/notificationService';
 import { backgroundNotificationService } from '../services/backgroundNotificationService';
+import { useAdhan } from '../context/AdhanContext';
 import { useNavigate } from 'react-router-dom';
 
 export const Settings: React.FC = () => {
   const { isDark, toggleDarkMode } = useDarkMode();
+  const { adhanEnabled, toggleAdhan, audioUnlocked, unlockAudio, playTestAdhan } = useAdhan();
   const [selectedReciter, setSelectedReciter] = useState(audioService.getReciter());
   const [adhkarEnabled, setAdhkarEnabled] = useState(() => notificationService.isEnabled());
   const navigate = useNavigate();
@@ -93,7 +95,47 @@ export const Settings: React.FC = () => {
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-xl font-bold text-text-muted">إشعارات الأذكار والتنبيهات</h2>
+        <h2 className="text-xl font-bold text-text-muted">إشعارات الأذكار ومواقيت الصلاة</h2>
+        
+        {/* Layer 1 Adhan Audio Settings */}
+        <Card className="p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Volume2 size={20} className="text-primary" />
+              <div>
+                <div className="font-semibold">الأذان الصوتي الفوري (Layer 1)</div>
+                <div className="text-xs text-text-muted">تشغيل صوت الأذان كاملاً تلقائياً طالما الصفحة مفتوحة</div>
+              </div>
+            </div>
+            <Button 
+              variant={adhanEnabled ? "primary" : "outline"} 
+              size="sm" 
+              onClick={toggleAdhan}
+            >
+              {adhanEnabled ? 'مفعّل' : 'تفعيل الأذان'}
+            </Button>
+          </div>
+
+          <div className="border-t border-black/5 dark:border-white/5 pt-3 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-text-muted">صلاحية الصوت للجلسة:</span>
+              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${audioUnlocked ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'}`}>
+                {audioUnlocked ? '🔊 مفعلة وموثوقة' : '⚠️ تحتاج تأكيد التفاعل'}
+              </span>
+            </div>
+            <div className="flex gap-2">
+              {!audioUnlocked && (
+                <Button size="sm" variant="primary" className="text-xs gap-1" onClick={unlockAudio}>
+                  🔔 تفعيل الصوت الآن
+                </Button>
+              )}
+              <Button size="sm" variant="outline" className="text-xs gap-1 border-primary/40" onClick={() => playTestAdhan()}>
+                🎧 سماع الأذان (تجربة)
+              </Button>
+            </div>
+          </div>
+        </Card>
+
         <Card className="p-4 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">

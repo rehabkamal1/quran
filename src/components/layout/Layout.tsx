@@ -31,7 +31,7 @@ export const Layout: React.FC = () => {
       {adhanEnabled && !audioUnlocked && (
         <div 
           onClick={unlockAudio}
-          className="fixed top-20 left-4 right-4 md:left-auto md:right-6 md:w-96 z-50 bg-gradient-to-r from-amber-500 to-amber-600 text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between border border-white/20 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all animate-bounce"
+          className="fixed bottom-20 left-4 right-4 md:top-20 md:bottom-auto md:left-auto md:right-6 md:w-96 z-[100] bg-gradient-to-r from-amber-500 to-amber-600 text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between border border-white/20 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all animate-bounce"
         >
           <div className="flex items-center gap-3">
             <span className="text-2xl">🔊</span>
@@ -40,7 +40,7 @@ export const Layout: React.FC = () => {
               <p className="text-xs opacity-90">تفعيل صلاحية الصوت لجلسة المتصفح الحالية 🕌</p>
             </div>
           </div>
-          <button className="bg-white/20 hover:bg-white/30 text-white text-xs px-3 py-1.5 rounded-lg font-bold">
+          <button className="bg-white/20 hover:bg-white/30 text-white text-xs px-3 py-1.5 rounded-lg font-bold shrink-0">
             تأكيد 🔔
           </button>
         </div>
