@@ -1,5 +1,6 @@
 
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import { Layout } from './components/layout/Layout';
 import { Home } from './pages/Home';
 import { Quran } from './pages/Quran';
@@ -48,6 +49,7 @@ function App() {
               <Route path="settings" element={<Settings />} />
             </Route>
           </Routes>
+          <Analytics />
         </AdhanProvider>
       </GlobalPlayerProvider>
     </BrowserRouter>
