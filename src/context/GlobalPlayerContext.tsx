@@ -66,13 +66,11 @@ export const GlobalPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const safePlayAudio = async (audio: HTMLAudioElement) => {
     try {
-      audio.load();
       await audio.play();
       setIsPlaying(true);
     } catch (err) {
-      console.warn('Audio play was blocked; retrying after load:', err);
+      console.warn('Audio play was blocked; retrying:', err);
       setTimeout(() => {
-        audio.load();
         audio.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
       }, 250);
     }
@@ -112,6 +110,8 @@ export const GlobalPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const stopAudio = () => {
     if (audioRef.current) {
       audioRef.current.pause();
+      audioRef.current.onerror = null;
+      audioRef.current.onended = null;
       audioRef.current.removeAttribute('src');
     }
     setIsPlaying(false);
@@ -140,6 +140,8 @@ export const GlobalPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const playFullSurah = (sNum: number, sName: string, reciterId?: string) => {
     const audio = getAudioElement();
     audio.pause();
+    audio.onerror = null;
+    audio.onended = null;
 
     const reciterKey = reciterId || audioService.getReciter();
     const reciterName = RECITERS.find(r => r.id === reciterKey)?.name || 'الشيخ القارئ';
@@ -173,6 +175,8 @@ export const GlobalPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const playAyah = (sNum: number, sName: string, ayah: Ayah, surahAyahs: Ayah[], reciterId?: string) => {
     const audio = getAudioElement();
     audio.pause();
+    audio.onerror = null;
+    audio.onended = null;
 
     currentSurahAyahsRef.current = surahAyahs;
     currentSurahNameRef.current = sName;
@@ -180,9 +184,25 @@ export const GlobalPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     const reciterKey = reciterId || audioService.getReciter();
     const reciterName = RECITERS.find(r => r.id === reciterKey)?.name || 'الشيخ القارئ';
-    const url = audioService.getAyahAudioUrl(ayah.number, reciterKey);
+    
+    const primaryUrl = audioService.getAyahAudioUrl(ayah.number, reciterKey, sNum, ayah.numberInSurah);
+    const fallbackUrl = audioService.getAyahAudioFallbackUrl(ayah.number, reciterKey);
 
-    audio.src = url;
+    let triedFallback = false;
+    audio.onerror = () => {
+      if (!triedFallback) {
+        triedFallback = true;
+        console.warn(`Primary Ayah audio failed (${primaryUrl}), trying fallback (${fallbackUrl})...`);
+        audio.src = fallbackUrl;
+        audio.load();
+        safePlayAudio(audio);
+      } else {
+        console.error(`Both primary and fallback audio failed for Ayah ${ayah.numberInSurah}`);
+        setIsPlaying(false);
+      }
+    };
+
+    audio.src = primaryUrl;
     audio.load();
 
     setSurahNumber(sNum);

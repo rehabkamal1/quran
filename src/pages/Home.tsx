@@ -643,7 +643,7 @@ export const Home: React.FC = () => {
                 <h3 className="font-bold text-base text-primary dark:text-primary-light">عن المطور والدعم (صدقة جارية)</h3>
               </div>
               <p className="text-xs text-text-muted mt-0.5 font-sans">
-                تعرف على م. رحاب كمال مطورة المنصة وساهم في استمرار وتطوير الموقع
+                تعرف على م. ريحاب كمال مطورة المنصة وساهم في استمرار وتطوير الموقع
               </p>
             </div>
           </div>

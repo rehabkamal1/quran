@@ -37,15 +37,29 @@ export const audioService = {
     return localStorage.getItem('preferred_adhkar_reciter') || 'ar.alafasy';
   },
 
-  // Get audio URL for a specific ayah
-  // The global ayah number is used by api.alquran.cloud for audio
-  // However, alquran.cloud CDN provides audio by surah and ayah number as well if needed.
-  // We will use the global ayah number since our data has it (or we can calculate it).
-  // Actually, standard is: https://cdn.islamic.network/quran/audio/128/{reciter}/{global_ayah_number}.mp3
-  getAyahAudioUrl: (globalAyahNumber: number, reciterId?: string): string => {
+  // Get primary audio URL for a specific ayah (EveryAyah high performance audio CDN)
+  getAyahAudioUrl: (globalAyahNumber: number, reciterId?: string, surahNumber?: number, ayahNumberInSurah?: number): string => {
+    const reciter = reciterId || audioService.getReciter();
+    if (surahNumber && ayahNumberInSurah) {
+      const sStr = String(surahNumber).padStart(3, '0');
+      const aStr = String(ayahNumberInSurah).padStart(3, '0');
+      if (reciter === 'ar.mahermuaiqly') {
+        return `https://everyayah.com/data/MaherAlMuaiqly128kbps/${sStr}${aStr}.mp3`;
+      }
+      if (reciter === 'ar.husary') {
+        return `https://everyayah.com/data/Husary_128kbps/${sStr}${aStr}.mp3`;
+      }
+      return `https://everyayah.com/data/Alafasy_128kbps/${sStr}${aStr}.mp3`;
+    }
+    return `https://cdn.islamic.network/quran/audio/128/${reciter}/${globalAyahNumber}.mp3`;
+  },
+
+  // Get fallback audio URL for a specific ayah (Islamic Network CDN)
+  getAyahAudioFallbackUrl: (globalAyahNumber: number, reciterId?: string): string => {
     const reciter = reciterId || audioService.getReciter();
     return `https://cdn.islamic.network/quran/audio/128/${reciter}/${globalAyahNumber}.mp3`;
   },
+
 
   // Get full continuous Surah MP3 URL
   getSurahAudioUrl: (surahNumber: number, reciterId?: string): string => {

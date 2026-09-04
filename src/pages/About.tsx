@@ -92,13 +92,13 @@ export const About: React.FC = () => {
         <Card className="p-6 md:p-8 space-y-6">
           <div className="flex flex-col md:flex-row items-center md:items-start gap-6 text-center md:text-right">
             <div className="w-24 h-24 rounded-2xl bg-primary/10 border-2 border-primary/20 flex items-center justify-center text-primary font-bold text-3xl shrink-0 shadow-inner">
-              رحاب
+              Rehab
             </div>
             
             <div className="space-y-3 flex-1">
               <div>
                 <h3 className="text-2xl font-bold text-primary dark:text-primary-light">
-                  م. رحاب كمال (Rehab Kamal)
+                  eng (Rehab Kamal)
                 </h3>
                 <p className="text-sm text-text-muted font-sans font-semibold mt-0.5">
                   مهندسة برمجيات ومطورة الويب (Software Engineer)
