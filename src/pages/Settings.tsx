@@ -5,6 +5,7 @@ import { Moon, Sun, Headphones, Globe, Trash2, Heart, ChevronLeft, BellRing } fr
 import { useDarkMode } from '../hooks/useDarkMode';
 import { audioService, RECITERS } from '../services/audioService';
 import { notificationService } from '../services/notificationService';
+import { backgroundNotificationService } from '../services/backgroundNotificationService';
 import { useNavigate } from 'react-router-dom';
 
 export const Settings: React.FC = () => {
@@ -131,6 +132,52 @@ export const Settings: React.FC = () => {
                 <Moon size={14} /> 🌙 أذكار المساء
               </Button>
             </div>
+          </div>
+        </Card>
+
+        {/* Background Notifications (Layer 2) */}
+        <Card className="p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <BellRing size={20} className="text-amber-600 dark:text-amber-400" />
+              <div>
+                <div className="font-semibold">إشعارات مواقيت الصلاة في الخلفية (Layer 2)</div>
+                <div className="text-xs text-text-muted">تنبيهات منبثقة عند دخول وقت الصلاة عبر الـ Service Worker</div>
+              </div>
+            </div>
+            <Button 
+              variant={backgroundNotificationService.isBackgroundEnabled() ? "primary" : "outline"} 
+              size="sm" 
+              onClick={async () => {
+                if (backgroundNotificationService.isBackgroundEnabled()) {
+                  await backgroundNotificationService.unsubscribeFromPush();
+                } else {
+                  await backgroundNotificationService.subscribeToPush();
+                }
+                window.location.reload();
+              }}
+            >
+              {backgroundNotificationService.isBackgroundEnabled() ? 'مفعّلة' : 'تفعيل إشعارات الخلفية'}
+            </Button>
+          </div>
+
+          <div className="border-t border-black/5 dark:border-white/5 pt-3 flex items-center justify-between">
+            <span className="text-xs text-text-muted">اختبار إشعار الخلفية (Service Worker Notification)</span>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="text-xs border-primary/40"
+              onClick={async () => {
+                const ok = await backgroundNotificationService.sendTestBackgroundNotification({
+                  title: 'اختبار إشعار الصلاة في الخلفية 🕌',
+                  body: 'هذا إشعار تجريبي عبر Service Worker مستقل لتنبيهات الخلفية',
+                  url: '/prayer'
+                });
+                if (!ok) alert('يرجى السماح بالإشعارات في المتصفح أولاً.');
+              }}
+            >
+              🔔 إرسال إشعار تجريبي
+            </Button>
           </div>
         </Card>
       </section>
