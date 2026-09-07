@@ -1,7 +1,8 @@
 export const RECITERS = [
   { id: 'ar.alafasy', name: 'مشاري العفاسي' },
   { id: 'ar.mahermuaiqly', name: 'ماهر المعيقلي' },
-  { id: 'ar.husary', name: 'محمود خليل الحصري' }
+  { id: 'ar.husary', name: 'محمود خليل الحصري' },
+  { id: 'ar.minshawi', name: 'محمد المنشاوي' }
 ];
 
 export const ADHAKAR_RECITERS = [
@@ -49,6 +50,9 @@ export const audioService = {
       if (reciter === 'ar.husary') {
         return `https://everyayah.com/data/Husary_128kbps/${sStr}${aStr}.mp3`;
       }
+      if (reciter === 'ar.minshawi') {
+        return `https://everyayah.com/data/Minshawi_128kbps/${sStr}${aStr}.mp3`;
+      }
       return `https://everyayah.com/data/Alafasy_128kbps/${sStr}${aStr}.mp3`;
     }
     return `https://cdn.islamic.network/quran/audio/128/${reciter}/${globalAyahNumber}.mp3`;
@@ -70,6 +74,9 @@ export const audioService = {
     }
     if (reciter === 'ar.husary') {
       return `https://server13.mp3quran.net/husr/${padded}.mp3`;
+    }
+    if (reciter === 'ar.minshawi') {
+      return `https://server8.mp3quran.net/minsh/${padded}.mp3`;
     }
     // Default Alafasy
     return `https://server8.mp3quran.net/afs/${padded}.mp3`;

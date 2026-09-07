@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
-import { Search, Play, Pause, Bookmark, Download } from 'lucide-react';
+import { Search, Play, Pause, Bookmark, Download, BookOpenText, Grid2x2, ImageIcon, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { quranApi } from '../services/quranApi';
 import type { SurahMeta } from '../services/quranApi';
 import { useGlobalPlayer } from '../context/GlobalPlayerContext';
 import { audioService } from '../services/audioService';
+import { storage } from '../services/storage';
 
 const downloadSurahMp3 = async (surahNumber: number, surahName: string) => {
   const sourceUrl = audioService.getSurahAudioUrl(surahNumber);
@@ -39,10 +40,14 @@ const downloadSurahMp3 = async (surahNumber: number, surahName: string) => {
 };
 
 export const Quran: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'surah' | 'juz'>('surah');
+  const [activeTab, setActiveTab] = useState<'surah' | 'juz' | 'saved'>('surah');
+  const [savedSectionTab, setSavedSectionTab] = useState<'images' | 'ayahs'>('images');
   const [surahs, setSurahs] = useState<SurahMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [bookmarkedSurahIds, setBookmarkedSurahIds] = useState<number[]>([]);
+
+  const savedBookmarks = storage.getBookmarks();
 
   const navigate = useNavigate();
   const { playFullSurah, isPlaying, surahNumber: globalSurahNumber, isFullSurahMode, togglePlayPause } = useGlobalPlayer();
@@ -51,10 +56,37 @@ export const Quran: React.FC = () => {
     const loadData = async () => {
       const data = await quranApi.getSurahs();
       setSurahs(data);
+      const saved = storage.getBookmarks();
+      const surahSavedIds = saved
+        .filter((bookmark) => bookmark.id.startsWith('surah-') || bookmark.ayah === 0)
+        .map((bookmark) => bookmark.surah);
+      setBookmarkedSurahIds(surahSavedIds);
       setLoading(false);
     };
     loadData();
   }, []);
+
+  const toggleSurahBookmark = (surahNumber: number, surahName: string) => {
+    const id = `surah-${surahNumber}`;
+    const isSaved = storage.isBookmarked(id);
+    const totalAyahs = surahs.find((surah) => surah.number === surahNumber)?.numberOfAyahs ?? 0;
+
+    if (isSaved) {
+      storage.removeBookmark(id);
+      setBookmarkedSurahIds((prev) => prev.filter((item) => item !== surahNumber));
+      return;
+    }
+
+    storage.addBookmark({
+      id,
+      surah: surahNumber,
+      ayah: totalAyahs,
+      surahName,
+      text: `${surahName} - سورة ${surahName}`,
+      dateAdded: new Date().toISOString(),
+    });
+    setBookmarkedSurahIds((prev) => [...prev, surahNumber]);
+  };
 
   const filteredSurahs = surahs.filter(s => 
     s.name.includes(searchQuery) || s.englishName.toLowerCase().includes(searchQuery.toLowerCase())
@@ -76,18 +108,27 @@ export const Quran: React.FC = () => {
       </section>
 
       {/* Tabs */}
-      <div className="flex bg-black/5 dark:bg-white/5 rounded-xl p-1">
+      <div className="flex w-full bg-black/5 dark:bg-white/5 rounded-xl p-1 gap-1">
         <button
           onClick={() => setActiveTab('surah')}
-          className={`flex-1 py-2 rounded-lg text-sm font-bold transition-colors ${activeTab === 'surah' ? 'bg-white dark:bg-card-dark shadow-sm text-primary dark:text-primary-light' : 'text-text-muted hover:text-text-main'}`}
+          className={`w-full min-h-[48px] rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-2 ${activeTab === 'surah' ? 'bg-white dark:bg-card-dark shadow-sm text-primary dark:text-primary-light' : 'text-text-muted hover:text-text-main'}`}
         >
-          السور
+          <BookOpenText size={16} />
+          <span>السور</span>
         </button>
         <button
           onClick={() => setActiveTab('juz')}
-          className={`flex-1 py-2 rounded-lg text-sm font-bold transition-colors ${activeTab === 'juz' ? 'bg-white dark:bg-card-dark shadow-sm text-primary dark:text-primary-light' : 'text-text-muted hover:text-text-main'}`}
+          className={`w-full min-h-[48px] rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-2 ${activeTab === 'juz' ? 'bg-white dark:bg-card-dark shadow-sm text-primary dark:text-primary-light' : 'text-text-muted hover:text-text-main'}`}
         >
-          الأجزاء
+          <Grid2x2 size={16} />
+          <span>الأجزاء</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('saved')}
+          className={`w-full min-h-[48px] rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-2 ${activeTab === 'saved' ? 'bg-white dark:bg-card-dark shadow-sm text-primary dark:text-primary-light' : 'text-text-muted hover:text-text-main'}`}
+        >
+          <Bookmark size={16} />
+          <span>المحفوظات</span>
         </button>
       </div>
 
@@ -132,6 +173,22 @@ export const Quran: React.FC = () => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      toggleSurahBookmark(surah.number, surah.name);
+                    }}
+                    className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+                      bookmarkedSurahIds.includes(surah.number)
+                        ? 'bg-primary/10 text-primary'
+                        : 'bg-black/5 dark:bg-white/5 text-text-muted hover:text-primary hover:bg-primary/10'
+                    }`}
+                    title={bookmarkedSurahIds.includes(surah.number) ? 'إزالة من المحفوظات' : 'حفظ السورة'}
+                    aria-label={bookmarkedSurahIds.includes(surah.number) ? 'إزالة من المحفوظات' : 'حفظ السورة'}
+                  >
+                    <Bookmark size={18} className={bookmarkedSurahIds.includes(surah.number) ? 'fill-current' : ''} />
+                  </button>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
                       downloadSurahMp3(surah.number, surah.name);
                     }}
                     className="w-9 h-9 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 text-text-muted hover:text-primary hover:bg-primary/10 transition-all"
@@ -164,7 +221,7 @@ export const Quran: React.FC = () => {
               </Card>
             );
           })
-        ) : (
+        ) : activeTab === 'juz' ? (
           JUZ_DATA.map((juz) => {
             const juzSurahsList = JUZ_SURAHS[juz.number] || [];
             return (
@@ -203,6 +260,63 @@ export const Quran: React.FC = () => {
               </Card>
             );
           })
+        ) : (
+          <div className="space-y-4">
+            <div className="flex w-full bg-black/5 dark:bg-white/5 rounded-xl p-1 gap-1">
+              <button
+                onClick={() => setSavedSectionTab('images')}
+                className={`w-full min-h-[48px] rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-2 ${savedSectionTab === 'images' ? 'bg-white dark:bg-card-dark shadow-sm text-primary dark:text-primary-light' : 'text-text-muted hover:text-text-main'}`}
+              >
+                <ImageIcon size={16} />
+                <span>الصور</span>
+              </button>
+              <button
+                onClick={() => setSavedSectionTab('ayahs')}
+                className={`w-full min-h-[48px] rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-2 ${savedSectionTab === 'ayahs' ? 'bg-white dark:bg-card-dark shadow-sm text-primary dark:text-primary-light' : 'text-text-muted hover:text-text-main'}`}
+              >
+                <FileText size={16} />
+                <span>الآيات</span>
+              </button>
+            </div>
+
+            {savedSectionTab === 'images' ? (
+              <div className="rounded-2xl border border-dashed border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 p-8 text-center text-text-muted dark:text-text-darkMuted">
+                لا توجد صور محفوظة بعد.
+              </div>
+            ) : savedBookmarks.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 p-8 text-center text-text-muted dark:text-text-darkMuted">
+                لا توجد آيات محفوظة بعد.
+              </div>
+            ) : (
+              savedBookmarks.map((bookmark) => (
+                <Card
+                  key={bookmark.id}
+                  className="overflow-hidden cursor-pointer hover:border-primary/50 transition-all bg-white dark:bg-card-dark"
+                  onClick={() => navigate(`/quran/read/${bookmark.surah}`)}
+                >
+                  <div className="flex items-start gap-3 p-4">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/10 flex items-center justify-center shrink-0">
+                      <div className="text-center">
+                        <div className="text-xl font-black text-primary dark:text-primary-light">{bookmark.ayah}</div>
+                        <div className="text-[10px] text-text-muted">آية</div>
+                      </div>
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <h3 className="font-bold text-lg text-primary dark:text-primary-light truncate">{bookmark.surahName}</h3>
+                        <Bookmark size={16} className="text-primary shrink-0" />
+                      </div>
+
+                      <p className="text-sm leading-relaxed text-text-main dark:text-text-darkMain line-clamp-4 border-r-2 border-primary/20 pr-2">
+                        {bookmark.text}
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              ))
+            )}
+          </div>
         )}
       </div>
     </div>
