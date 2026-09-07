@@ -1,34 +1,57 @@
-# React + TypeScript + Vite
+# 📖 هداية — المنصة القرآنية المتكاملة (Hedayah Quran App)
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+تطبيق ويب تقدمي (PWA) للقرآن الكريم والخدمات الإسلامية، مصمم بأسلوب وتجربة تطبيق موبايل أصلي (Mobile-First Experience).
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 📱 مميزات التطبيق الرئيسية
 
-## React Compiler
+- 📖 **القرآن الكريم كاملاً:** تصفح السور والأجزاء مع التفسير الميسر وتكرار الآيات للحفظ والاستماع بصوت كبار القراء.
+- 🔖 **قسم المحفوظات الفاخر:** حفظ الآيات والسور مع بنر استئناف القراءة وبطاقات اقتباس قرآني للمشاركة.
+- 🕌 **مواقيت الصلاة والأذان:** حساب فلكي دقيق حسب الموقع مع عد تنازلي حي وتشغيل الأذان تلقائياً.
+- 🧭 **بوصلة القبلة:** تحديد اتجاه الكعبة المشرفة بدقة اعتماداً على مستشعرات الهاتف.
+- 📿 **السبحة الإلكترونية:** تسبيح تفاعلي مع اهتزاز لمسي وأهداف يومية.
+- 🤲 **حصن المسلم والأذكار:** أذكار الصباح والمساء مع مشغل صوتي وعدادات تكرار.
+- 📻 **إذاعة القرآن الكريم:** بث مباشر لأشهر الإذاعات الإسلامية.
+- 🌙 **ميزات إضافية:** حاسبة ختمة القرآن، عداد رمضان، رقية شرعية، قصص الأنبياء، وأحاديث نبوية.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the Oxlint configuration
+## 🎨 الهوية ونظام الألوان (Design System)
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+- **اللون الأساسي:** الذهبي الملكي الفاخر (`#C9A45C` / `#B08C4A`)
+- **اللون الثانوي:** الفحمي الأنيق (`#1E232A` / `#111519`)
+- **الوضع الفاتح:** خلفية عاجية هادئة مريحة للعين (`#FCFBF8`)
+- **الوضع الداكن:** أسود كربوني عميق ومريح ليلاً (`#121418`)
+- **الخطوط:** خط **Cairo** لواجهة المستخدم وخط **Amiri** للمصحف الشريف والآيات.
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+---
+
+## 🛠️ التقنيات المستخدمة (Tech Stack)
+
+- **Frontend:** React 19 + TypeScript
+- **Bundler:** Vite 8
+- **Styling:** Tailwind CSS 3 (Dark Mode enabled)
+- **Animations:** Framer Motion
+- **Icons:** Lucide React
+- **PWA & Offline:** Vite Plugin PWA + Custom Service Worker + Workbox
+- **Islamic Calculations:** Adhan.js
+- **Routing:** React Router DOM v7
+- **Deployment:** Vercel (SPA Rewrites + Serverless Functions)
+
+---
+
+## 🚀 تشغيل المشروع محلياً
+
+```bash
+# تثبيت الحزم
+npm install
+
+# تشغيل بيئة التطوير
+npm run dev
+
+# بناء نسخة الإنتاج
+npm run build
 ```
-test
 
-
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+📄 **للاطلاع على التوثيق التفصيلي الشامل لجميع الميزات والألوان والمكونات، راجع ملف [PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md).**
