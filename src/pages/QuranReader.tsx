@@ -73,6 +73,25 @@ export const QuranReader: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [surah]);
 
+  useEffect(() => {
+    if (!surah || loading) return;
+    const params = new URLSearchParams(window.location.search);
+    const targetAyah = params.get('ayah');
+    if (targetAyah) {
+      const timer = setTimeout(() => {
+        const el = document.getElementById(`ayah-${targetAyah}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('ring-4', 'ring-primary', 'shadow-xl');
+          setTimeout(() => {
+            el.classList.remove('ring-4', 'ring-primary', 'shadow-xl');
+          }, 3500);
+        }
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, [surah, loading]);
+
   const changeReciter = (reciterId: string) => {
     audioService.setReciter(reciterId);
     setCurrentReciter(reciterId);
@@ -197,6 +216,7 @@ export const QuranReader: React.FC = () => {
 
           return (
             <Card 
+              id={`ayah-${ayah.numberInSurah}`}
               key={ayah.numberInSurah} 
               className={`p-5 sm:p-6 flex flex-col justify-between border-0 shadow-soft bg-white dark:bg-card-dark rounded-2xl relative transition-all duration-300 ${
                 isActive ? 'ring-2 ring-primary/50 bg-primary/5 dark:bg-primary-dark/5' : ''

@@ -50,5 +50,9 @@ export const storage = {
 
   isBookmarked: (id: string): boolean => {
     return storage.getBookmarks().some(b => b.id === id);
+  },
+
+  clearBookmarks: () => {
+    localStorage.removeItem(STORAGE_KEYS.BOOKMARKS);
   }
 };
