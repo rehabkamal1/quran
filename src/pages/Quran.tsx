@@ -1,11 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
-import { Search, Play, Pause, Bookmark } from 'lucide-react';
+import { Search, Play, Pause, Bookmark, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { quranApi } from '../services/quranApi';
 import type { SurahMeta } from '../services/quranApi';
 import { useGlobalPlayer } from '../context/GlobalPlayerContext';
+import { audioService } from '../services/audioService';
+
+const downloadSurahMp3 = async (surahNumber: number, surahName: string) => {
+  const sourceUrl = audioService.getSurahAudioUrl(surahNumber);
+  const fileName = `${surahName}.mp3`;
+
+  try {
+    const response = await fetch(sourceUrl, { mode: 'cors' });
+    if (!response.ok) throw new Error('Audio fetch failed');
+
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = fileName;
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(objectUrl);
+  } catch (error) {
+    const link = document.createElement('a');
+    link.href = sourceUrl;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+};
 
 export const Quran: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'surah' | 'juz'>('surah');
@@ -97,25 +128,39 @@ export const Quran: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Quick Play Button */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (isPlayingThisSurah) {
-                      togglePlayPause();
-                    } else {
-                      playFullSurah(surah.number, surah.name);
-                    }
-                  }}
-                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
-                    isPlayingThisSurah 
-                      ? 'bg-primary text-white shadow-md' 
-                      : 'bg-black/5 dark:bg-white/5 text-text-muted hover:text-primary hover:bg-primary/10'
-                  }`}
-                  title="تشغيل السورة كاملة"
-                >
-                  {isPlayingThisSurah ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      downloadSurahMp3(surah.number, surah.name);
+                    }}
+                    className="w-9 h-9 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 text-text-muted hover:text-primary hover:bg-primary/10 transition-all"
+                    title="تحميل بصوت الشيخ"
+                    aria-label="تحميل بصوت الشيخ"
+                  >
+                    <Download size={18} />
+                  </button>
+
+                  {/* Quick Play Button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (isPlayingThisSurah) {
+                        togglePlayPause();
+                      } else {
+                        playFullSurah(surah.number, surah.name);
+                      }
+                    }}
+                    className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+                      isPlayingThisSurah 
+                        ? 'bg-primary text-white shadow-md' 
+                        : 'bg-black/5 dark:bg-white/5 text-text-muted hover:text-primary hover:bg-primary/10'
+                    }`}
+                    title="تشغيل السورة كاملة"
+                  >
+                    {isPlayingThisSurah ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
+                  </button>
+                </div>
               </Card>
             );
           })
@@ -137,8 +182,23 @@ export const Quran: React.FC = () => {
                     <p className="text-xs text-text-muted">يحتوي على {juzSurahsList.length} سورة</p>
                   </div>
                 </div>
-                <div className="text-primary/50">
-                  <Bookmark size={20} />
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const firstSurahNumber = juzSurahsList[0] || 1;
+                      const firstSurahName = surahs.find((item) => item.number === firstSurahNumber)?.name || `الجزء ${juz.number}`;
+                      downloadSurahMp3(firstSurahNumber, firstSurahName);
+                    }}
+                    className="w-9 h-9 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 text-text-muted hover:text-primary hover:bg-primary/10 transition-all"
+                    title="تحميل جزء بصوت الشيخ"
+                    aria-label="تحميل جزء بصوت الشيخ"
+                  >
+                    <Download size={18} />
+                  </button>
+                  <div className="text-primary/50">
+                    <Bookmark size={20} />
+                  </div>
                 </div>
               </Card>
             );
