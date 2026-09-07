@@ -41,5 +41,8 @@
   }
   .dark .glass-panel {
     @apply bg-card-dark/80 border-white/5 shadow-soft-dark;
+
+
+    
   }
 }
