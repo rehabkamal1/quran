@@ -14,8 +14,6 @@
   .dark body {
     @apply bg-background-dark text-text-darkMain;
   }
-
-  /* Custom Scrollbar for better UI */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -42,9 +40,5 @@
   .dark .glass-panel {
     @apply bg-card-dark/80 border-white/5 shadow-soft-dark;
 
-
-
-
-    
   }
 }
