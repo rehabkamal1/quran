@@ -44,17 +44,17 @@ jobs:
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
 
-      - name: Build Debug APK via Gradle
+      - name: Build Release APK via Gradle
         run: |
           cd android
           chmod +x ./gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleRelease --no-daemon --stacktrace
 
-      - name: Upload Debug APK Artifact
+      - name: Upload Release APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: hedayah-quran-app-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: hedayah-quran-app-release-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
           retention-days: 30
 
       - name: Publish to GitHub Releases
@@ -67,7 +67,9 @@ jobs:
             🕌 تطبيق هداية للقرآن الكريم (أندرويد APK):
             - مواقيت الصلاة متوافقة بنسبة 100% مع الهيئة المصرية العامة للمساحة ودار الإفتاء.
             - منبهات وإشعارات الأذان تعمل في الخلفية حتى مع إغلاق التطبيق.
-            - تلاوات وقراء متعددون وتحكم كامل في حجم خط المصحف.
-          files: android/app/build/outputs/apk/debug/app-debug.apk
+            - تلاوات وقراء متعددون وتحكم كامل في حجم خط المصحف وتغيير صوت المؤذن.
+            - نظام التحديث التلقائي In-App Update المدعوم بشهادة توقيع Release موحدة.
+          files: android/app/build/outputs/apk/release/app-release.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

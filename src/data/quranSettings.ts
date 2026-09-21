@@ -29,3 +29,4 @@ export const getQuranFontSizeClass = (sizeId?: string | null): string => {
   const found = QURAN_FONT_SIZES.find(f => f.id === activeId);
   return found ? found.sizeClass : QURAN_FONT_SIZES[1].sizeClass;
 };
+

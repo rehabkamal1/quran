@@ -68,3 +68,4 @@ export const getMuezzinById = (muezzinId?: string | null): Muezzin => {
   const chosenId = muezzinId || localStorage.getItem('adhan_muezzin_voice') || 'makkah';
   return MUEZZINS.find(item => item.id === chosenId) || MUEZZINS[0];
 };
+

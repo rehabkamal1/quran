@@ -18,7 +18,7 @@ export const APP_CURRENT_VERSION: AppVersionInfo = {
   releaseDate: '2026-09-21',
   title: 'إصدار جديد متوفر للتطبيق ✨',
   notes: 'تحديث مواقيت الصلاة لتتوافق 100% مع الهيئة المصرية العامة للمساحة، وتفعيل سجل المواظبة وتنبيهات الأذكار.',
-  apkDownloadUrl: 'https://github.com/rehabkamal1/quran/releases/download/apk-latest/app-debug.apk',
+  apkDownloadUrl: 'https://github.com/rehabkamal1/quran/releases/download/apk-latest/app-release.apk',
   releaseUrl: 'https://github.com/rehabkamal1/quran/releases/tag/apk-latest'
 };
 
