@@ -158,6 +158,9 @@ quran/
 │   ├── App.tsx                 # نقطة توزيع المسارات الرئيسية
 │   ├── main.tsx                # نقطة تشغيل التطبيق
 │   └── index.css               # التنسيقات العامة وقواعد الخطوط
+├── android/                    # مشروع أندرويد الأصلي المتولد عبر Capacitor (Native Android Studio Project)
+├── .github/workflows/          # سير عمل GitHub Actions لبناء ملف الـ APK سحابياً
+├── capacitor.config.ts         # إعدادات كاباسيتور ومعرف التطبيق (com.hedayah.quran)
 ├── vercel.json                 # إعدادات الاستضافة وإعادة توجيه الـ SPA على Vercel
 ├── tailwind.config.js          # تخصيص باليت الألوان والخطوط والظلال
 ├── vite.config.ts              # إعدادات بيئة البناء وتكوين الـ PWA
@@ -172,9 +175,17 @@ quran/
   ```bash
   npm run dev
   ```
-- **بناء المشروع للإنتاج (Production Build):**
+- **بناء المشروع ومزامنة تطبيق أندرويد APK:**
+  ```bash
+  npm run build:apk
+  ```
+- **بناء نسخة الإنتاج للويب:**
   ```bash
   npm run build
+  ```
+- **فتح مشروع الأندرويد في Android Studio:**
+  ```bash
+  npm run cap:open
   ```
 - **فحص وتدقيق الكود (Linting):**
   ```bash
@@ -188,3 +199,4 @@ quran/
 ---
 
 *تم إعداد هذا التوثيق ليكون مرجعاً احترافياً شاملاً للمشروع يمكن استخدامه في ملف الأعمال (Portfolio)، مستندات التسليم (Handover)، أو توثيق الـ GitHub.*
+

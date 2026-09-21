@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">هداية - القرآن الكريم</string>
+    <string name="title_activity_main">هداية - القرآن الكريم</string>
+    <string name="package_name">com.hedayah.quran</string>
+    <string name="custom_url_scheme">com.hedayah.quran</string>
+</resources>

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { prayerApi } from '../services/prayerApi';
 import type { PrayerTimes } from '../services/prayerApi';
+import { nativeNotificationService } from '../services/nativeNotificationService';
 
 export interface NextPrayerInfo {
   name: string;
@@ -286,19 +287,31 @@ export const AdhanProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!adhanEnabled) {
       await unlockAudio();
 
-      import('../services/notificationService').then(async ({ notificationService }) => {
-        const granted = await notificationService.requestPermission();
-        if (granted) {
-          notificationService.showNotification("تم تفعيل تنبيهات الأذان 🕌", "سيصلك إشعار عند دخول وقت الصلاة", "/prayer");
-        } else {
-          alert("يرجى السماح بالإشعارات من إعدادات المتصفح لضمان وصول تنبيه الأذان حتى لو كان الموقع في الخلفية.");
+      if (nativeNotificationService.isNative()) {
+        const granted = await nativeNotificationService.requestPermission();
+        if (granted && timingsRef.current) {
+          const cityId = localStorage.getItem('prayer_selected_city') || 'Makkah';
+          const city = CITIES.find(c => c.id === cityId) || CITIES[0];
+          await nativeNotificationService.schedulePrayers(timingsRef.current, city.name);
         }
-      });
+      } else {
+        import('../services/notificationService').then(async ({ notificationService }) => {
+          const granted = await notificationService.requestPermission();
+          if (granted) {
+            notificationService.showNotification("تم تفعيل تنبيهات الأذان 🕌", "سيصلك إشعار عند دخول وقت الصلاة", "/prayer");
+          } else {
+            alert("يرجى السماح بالإشعارات من إعدادات المتصفح لضمان وصول تنبيه الأذان حتى لو كان الموقع في الخلفية.");
+          }
+        });
+      }
       setAdhanEnabled(true);
       localStorage.setItem('adhan_enabled', 'true');
     } else {
       setAdhanEnabled(false);
       localStorage.setItem('adhan_enabled', 'false');
+      if (nativeNotificationService.isNative()) {
+        await nativeNotificationService.cancelAll();
+      }
       stopAdhan();
     }
   };
@@ -314,6 +327,9 @@ export const AdhanProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const playTestAdhan = async () => {
     await unlockAudio();
+    if (nativeNotificationService.isNative()) {
+      await nativeNotificationService.sendTestNotification();
+    }
     playAdhan('تجربة الأذان');
   };
 
@@ -371,6 +387,9 @@ export const AdhanProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       if (timings) {
         scheduleNextPrayer(timings);
+        if (enabled && nativeNotificationService.isNative()) {
+          nativeNotificationService.schedulePrayers(timings, city.name);
+        }
       }
     };
 

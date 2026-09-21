@@ -1,25 +1,178 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Moon, Sun, Headphones, Globe, Trash2, Heart, ChevronLeft, BellRing, Volume2 } from 'lucide-react';
+import { 
+  Moon, Sun, Headphones, Globe, Trash2, Heart, ChevronLeft, BellRing, 
+  Volume2, Smartphone, Download, Share2, MapPin, Compass, Check, AlertTriangle, 
+  BookOpen, Type, ShieldCheck, X, ArrowDownToLine
+} from 'lucide-react';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { audioService, RECITERS } from '../services/audioService';
 import { notificationService } from '../services/notificationService';
 import { backgroundNotificationService } from '../services/backgroundNotificationService';
+import { nativeNotificationService } from '../services/nativeNotificationService';
 import { useAdhan } from '../context/AdhanContext';
 import { useNavigate } from 'react-router-dom';
+import { storage } from '../services/storage';
+
+const CITIES = [
+  { id: 'Makkah', name: 'مكة المكرمة', country: 'السعودية' },
+  { id: 'Madinah', name: 'المدينة المنورة', country: 'السعودية' },
+  { id: 'Riyadh', name: 'الرياض', country: 'السعودية' },
+  { id: 'Cairo', name: 'القاهرة', country: 'مصر' },
+  { id: 'Alexandria', name: 'الإسكندرية', country: 'مصر' },
+  { id: 'Giza', name: 'الجيزة', country: 'مصر' },
+  { id: 'Dubai', name: 'دبي', country: 'الإمارات' },
+  { id: 'AbuDhabi', name: 'أبو ظبي', country: 'الإمارات' },
+  { id: 'Amman', name: 'عمان', country: 'الأردن' },
+  { id: 'Jerusalem', name: 'القدس الشريف', country: 'فلسطين' },
+  { id: 'Beirut', name: 'بيروت', country: 'لبنان' },
+  { id: 'Kuwait', name: 'الكويت', country: 'الكويت' },
+  { id: 'Doha', name: 'الدوحة', country: 'قطر' },
+  { id: 'Istanbul', name: 'إسطنبول', country: 'تركيا' },
+];
+
+const CALC_METHODS = [
+  { id: 'egypt', name: 'الهيئة المصرية العامة للمساحة' },
+  { id: 'makkah', name: 'جامعة أم القرى - مكة المكرمة' },
+  { id: 'mwl', name: 'رابطة العالم الإسلامي' },
+  { id: 'uae', name: 'الهيئة العامة للشؤون الإسلامية (الإمارات)' },
+  { id: 'isna', name: 'الجمعية الإسلامية لأمريكا الشمالية (ISNA)' },
+];
+
+const MUEZZINS = [
+  { id: 'makkah', name: 'أذان الحرم المكي الشريف', url: '/audio/adhan.mp3' },
+  { id: 'madinah', name: 'أذان الحرم المدني الشريف', url: '/audio/adhan.mp3' },
+  { id: 'alaqsa', name: 'أذان المسجد الأقصى المبارك', url: '/audio/adhan.mp3' },
+  { id: 'abdulbasit', name: 'أذان الشيخ عبد الباسط عبد الصمد', url: '/audio/adhan.mp3' },
+  { id: 'alafasy', name: 'أذان الشيخ مشاري راشد العفاسي', url: '/audio/adhan.mp3' },
+];
+
+const FONT_SIZES = [
+  { id: 'sm', label: 'صغير', sizeClass: 'text-lg leading-relaxed' },
+  { id: 'md', label: 'متوسط', sizeClass: 'text-2xl leading-loose' },
+  { id: 'lg', label: 'كبير', sizeClass: 'text-3xl leading-loose' },
+  { id: 'xl', label: 'كبير جداً', sizeClass: 'text-4xl leading-loose' },
+];
 
 export const Settings: React.FC = () => {
   const { isDark, toggleDarkMode } = useDarkMode();
   const { adhanEnabled, toggleAdhan, audioUnlocked, unlockAudio, playTestAdhan } = useAdhan();
+  const navigate = useNavigate();
+
+  // Settings states
   const [selectedReciter, setSelectedReciter] = useState(audioService.getReciter());
   const [adhkarEnabled, setAdhkarEnabled] = useState(() => notificationService.isEnabled());
-  const navigate = useNavigate();
+  
+  // Prayer & Location settings
+  const [useLocation, setUseLocation] = useState(() => localStorage.getItem('prayer_use_location') !== 'false');
+  const [selectedCity, setSelectedCity] = useState(() => localStorage.getItem('prayer_selected_city') || 'Makkah');
+  const [calcMethod, setCalcMethod] = useState(() => localStorage.getItem('prayer_calc_method') || 'egypt');
+  const [asrMethod, setAsrMethod] = useState(() => localStorage.getItem('prayer_asr_juristic') || 'standard');
+  
+  // Adhan & Notification custom choices
+  const [selectedMuezzin, setSelectedMuezzin] = useState(() => localStorage.getItem('adhan_muezzin_voice') || 'makkah');
+  const [testAudioPlaying, setTestAudioPlaying] = useState(false);
+  const [audioPlayerInstance, setAudioPlayerInstance] = useState<HTMLAudioElement | null>(null);
+
+  // Individual prayer toggles
+  const [prayerToggles, setPrayerToggles] = useState(() => {
+    try {
+      const saved = localStorage.getItem('prayer_individual_toggles');
+      return saved ? JSON.parse(saved) : { fajr: true, sunrise: false, dhuhr: true, asr: true, maghrib: true, isha: true };
+    } catch {
+      return { fajr: true, sunrise: false, dhuhr: true, asr: true, maghrib: true, isha: true };
+    }
+  });
+
+  // Additional reminders
+  const [fridayKahf, setFridayKahf] = useState(() => localStorage.getItem('reminder_kahf_friday') !== 'false');
+  const [qiyamNight, setQiyamNight] = useState(() => localStorage.getItem('reminder_qiyam_night') === 'true');
+
+  // Quran Font Size
+  const [quranFontSize, setQuranFontSize] = useState(() => localStorage.getItem('quran_font_size') || 'md');
+
+  // Modals & Feedback
+  const [showApkGuideModal, setShowApkGuideModal] = useState(false);
+  const [showResetConfirmModal, setShowResetConfirmModal] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const isNative = nativeNotificationService.isNative();
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 2500);
+  };
+
+  // Stop test audio if unmounted
+  useEffect(() => {
+    return () => {
+      if (audioPlayerInstance) {
+        audioPlayerInstance.pause();
+      }
+    };
+  }, [audioPlayerInstance]);
 
   const handleReciterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const val = e.target.value;
     setSelectedReciter(val);
     audioService.setReciter(val);
+    showToast('تم تحديث القارئ المفضل بنجاح');
+  };
+
+  const handleCityChange = (cityId: string) => {
+    setSelectedCity(cityId);
+    localStorage.setItem('prayer_selected_city', cityId);
+    localStorage.removeItem('prayer_timings_cache');
+    showToast(`تم ضبط المدينة على ${CITIES.find(c => c.id === cityId)?.name}`);
+  };
+
+  const handleToggleLocation = () => {
+    const nextVal = !useLocation;
+    setUseLocation(nextVal);
+    localStorage.setItem('prayer_use_location', String(nextVal));
+    localStorage.removeItem('prayer_timings_cache');
+    showToast(nextVal ? 'تم تفعيل التحديد التلقائي للموقع (GPS)' : 'تم الاعتماد على المدينة المحددة يدوياً');
+  };
+
+  const handleCalcMethodChange = (methodId: string) => {
+    setCalcMethod(methodId);
+    localStorage.setItem('prayer_calc_method', methodId);
+    localStorage.removeItem('prayer_timings_cache');
+    showToast('تم تحديث طريقة الحساب الفلكي');
+  };
+
+  const handlePrayerToggleChange = (key: keyof typeof prayerToggles) => {
+    const updated = { ...prayerToggles, [key]: !prayerToggles[key] };
+    setPrayerToggles(updated);
+    localStorage.setItem('prayer_individual_toggles', JSON.stringify(updated));
+  };
+
+  const handleMuezzinChange = (muezzinId: string) => {
+    setSelectedMuezzin(muezzinId);
+    localStorage.setItem('adhan_muezzin_voice', muezzinId);
+    showToast('تم تغيير صوت الأذان');
+  };
+
+  const handleTestMuezzinVoice = () => {
+    if (testAudioPlaying && audioPlayerInstance) {
+      audioPlayerInstance.pause();
+      setTestAudioPlaying(false);
+      return;
+    }
+
+    const muezzin = MUEZZINS.find(m => m.id === selectedMuezzin) || MUEZZINS[0];
+    const audio = new Audio(muezzin.url);
+    audio.play()
+      .then(() => {
+        setTestAudioPlaying(true);
+        setAudioPlayerInstance(audio);
+        audio.onended = () => setTestAudioPlaying(false);
+      })
+      .catch((err) => {
+        console.error('Audio test failed:', err);
+        showToast('تعذر تشغيل الصوت، يرجى النقر على الشاشة أولاً لتفعيل صلاحيات الصوت');
+      });
   };
 
   const handleToggleAdhkarAlerts = async () => {
@@ -28,12 +181,14 @@ export const Settings: React.FC = () => {
       if (granted) {
         notificationService.setEnabled(true);
         setAdhkarEnabled(true);
+        showToast('تم تفعيل تنبيهات الأذكار اليومية بنجاح 🔔');
       } else {
         alert("يرجى إعطاء الإذن بالإشعارات من إعدادات المتصفح للاستفادة من تنبيهات الأذكار.");
       }
     } else {
       notificationService.setEnabled(false);
       setAdhkarEnabled(false);
+      showToast('تم إيقاف تنبيهات الأذكار');
     }
   };
 
@@ -45,113 +200,463 @@ export const Settings: React.FC = () => {
     if (type === 'morning') {
       notificationService.showNotification(
         "أذكار الصباح ☀️ (اختبار)",
-        "«أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ وَالْحَمْدُ لِلَّهِ، لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ» 🎧 اضغط للاستماع المباشر للأذكار",
+        "«أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ وَالْحَمْدُ لِلَّهِ» 🎧 اضغط للاستماع",
         "/adhkar/morning?autoplay=true"
       );
       navigate('/adhkar/morning?autoplay=true');
     } else {
       notificationService.showNotification(
         "أذكار المساء 🌙 (اختبار)",
-        "«أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ وَالْحَمْدُ لِلَّهِ، لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ» 🎧 اضغط للاستماع المباشر للأذكار",
+        "«أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ وَالْحَمْدُ لِلَّهِ» 🎧 اضغط للاستماع",
         "/adhkar/evening?autoplay=true"
       );
       navigate('/adhkar/evening?autoplay=true');
     }
   };
 
-  return (
-    <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in duration-500 pb-20">
-      <h1 className="text-3xl font-bold text-primary dark:text-primary-light mb-8">الإعدادات</h1>
+  const handleSendTestNotification = async () => {
+    if (isNative) {
+      const ok = await nativeNotificationService.sendTestNotification();
+      if (ok) {
+        showToast('تم إرسال إشعار فوري تجريبي لنظام أندرويد 🕌');
+      } else {
+        alert('يرجى منح صلاحية الإشعارات للتطبيق من إعدادات هاتفك.');
+      }
+    } else {
+      const ok = await backgroundNotificationService.sendTestBackgroundNotification({
+        title: 'اختبار إشعار الصلاة 🕌',
+        body: 'حان الآن موعد أذان الصلاة — حي على الصلاة حي على الفلاح',
+        url: '/prayer'
+      });
+      if (ok) {
+        showToast('تم إرسال إشعار تجريبي بنجاح 🕌');
+      } else {
+        alert('يرجى السماح بالإشعارات في المتصفح أولاً.');
+      }
+    }
+  };
 
-      <section className="space-y-4">
-        <h2 className="text-xl font-bold text-text-muted">المظهر والصوت</h2>
-        <Card className="divide-y divide-black/5 dark:divide-white/5 p-0">
-          <div className="flex items-center justify-between p-4">
-            <div className="flex items-center gap-3">
-              {isDark ? <Moon size={20} className="text-primary" /> : <Sun size={20} className="text-primary" />}
-              <span className="font-semibold">الوضع الداكن</span>
+  const handleFontSizeChange = (sizeId: string) => {
+    setQuranFontSize(sizeId);
+    localStorage.setItem('quran_font_size', sizeId);
+    showToast(`تم تغيير حجم الخط إلى (${FONT_SIZES.find(f => f.id === sizeId)?.label})`);
+  };
+
+  const handleShareApp = async () => {
+    const shareData = {
+      title: 'هداية — تطبيق القرآن الكريم ومواقيت الصلاة',
+      text: 'حمّل واستمتع بتطبيق هداية للقرآن الكريم، مواقيت الصلاة، الأذكار، والقبلة بتجربة موبايل متكاملة (صدقة جارية):',
+      url: window.location.origin,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch {
+        // User cancelled share
+      }
+    }
+
+    navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`);
+    showToast('تم نسخ رابط التطبيق للمشاركة 📋');
+  };
+
+  const handleExportData = () => {
+    const exportObject = {
+      bookmarks: storage.getBookmarks(),
+      lastRead: storage.getLastRead(),
+      settings: {
+        reciter: selectedReciter,
+        city: selectedCity,
+        useLocation,
+        calcMethod,
+        quranFontSize,
+        adhanEnabled,
+      },
+      exportDate: new Date().toISOString(),
+    };
+
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObject, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `hedayah_backup_${new Date().toISOString().split('T')[0]}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+    showToast('تم تصدير ملف النسخة الاحتياطية بنجاح 💾');
+  };
+
+  const handleResetAllData = () => {
+    localStorage.clear();
+    setShowResetConfirmModal(false);
+    showToast('تمت استعادة الإعدادات الافتراضية بنجاح');
+    setTimeout(() => {
+      window.location.reload();
+    }, 800);
+  };
+
+  const currentFontSizeObj = FONT_SIZES.find(f => f.id === quranFontSize) || FONT_SIZES[1];
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in duration-500 pb-24">
+
+      {/* Floating Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 bg-secondary-dark/95 text-white px-5 py-3 rounded-2xl shadow-2xl border border-primary/30 flex items-center gap-3 backdrop-blur-md animate-in fade-in zoom-in-95 duration-200">
+          <div className="w-6 h-6 rounded-full bg-primary/20 text-primary-light flex items-center justify-center shrink-0">
+            <Check size={14} />
+          </div>
+          <span className="text-sm font-bold">{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-black text-primary dark:text-primary-light font-quran">
+            الإعدادات العامة
+          </h1>
+          <p className="text-xs text-text-muted mt-1">
+            تخصيص تجربة التلاوة، مواقيت الصلاة، وتنبيهات الأذان
+          </p>
+        </div>
+
+        {/* Platform Badge */}
+        <div className="self-start sm:self-auto flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary dark:text-primary-light text-xs font-bold">
+          <Smartphone size={14} />
+          <span>{isNative ? 'تطبيق أندرويد أصلي (APK)' : 'تطبيق ويب تقدمي (PWA)'}</span>
+        </div>
+      </div>
+
+      {/* ==========================================
+          SECTION 1: APK & APP SHARING BANNER
+      ========================================== */}
+      <Card className="p-5 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border-primary/30 rounded-3xl shadow-soft relative overflow-hidden">
+        <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-primary to-primary-light text-white flex items-center justify-center shadow-md shrink-0">
+              <Smartphone size={24} />
             </div>
-            <Button variant={isDark ? "primary" : "outline"} size="sm" onClick={toggleDarkMode}>
-              {isDark ? 'مفعل' : 'تفعيل'}
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-base text-text-main dark:text-text-darkMain">
+                  تطبيق هداية للأندرويد (ملف APK)
+                </h3>
+                <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
+                  جاهز للتثبيت
+                </span>
+              </div>
+              <p className="text-xs text-text-muted mt-0.5">
+                تنزيل التطبيق بصيغة APK لتشغيل الأذان في الخلفية بدون قيود المتصفح
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Button
+              size="sm"
+              variant="primary"
+              className="flex-1 sm:flex-initial text-xs gap-1.5 py-2.5 shadow-md"
+              onClick={() => setShowApkGuideModal(true)}
+            >
+              <Download size={15} />
+              <span>تحميل الـ APK</span>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs gap-1.5 py-2.5 bg-white dark:bg-card-dark border-primary/30"
+              onClick={handleShareApp}
+            >
+              <Share2 size={15} />
+              <span>مشاركة</span>
             </Button>
           </div>
-          
+        </div>
+      </Card>
+
+      {/* ==========================================
+          SECTION 2: PRAYER TIMES & LOCATION
+      ========================================== */}
+      <section className="space-y-3">
+        <h2 className="text-sm font-bold text-text-muted flex items-center gap-2 px-1">
+          <Compass size={16} className="text-primary" />
+          <span>مواقيت الصلاة وتحديد الموقع</span>
+        </h2>
+
+        <Card className="divide-y divide-black/5 dark:divide-white/5 p-0 rounded-2xl overflow-hidden">
+          {/* GPS Toggle */}
           <div className="flex items-center justify-between p-4">
             <div className="flex items-center gap-3">
-              <Headphones size={20} className="text-primary" />
-              <span className="font-semibold">القارئ المفضل</span>
+              <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                <MapPin size={18} />
+              </div>
+              <div>
+                <div className="font-bold text-sm">التحديد التلقائي للموقع (GPS)</div>
+                <div className="text-xs text-text-muted">حساب المواقيت الدقيقة وفق إحداثيات موقعك الجغرافي الحالي</div>
+              </div>
             </div>
-            <select 
-              value={selectedReciter} 
-              onChange={handleReciterChange}
-              className="bg-black/5 dark:bg-white/10 border-0 rounded-lg p-2 outline-none cursor-pointer text-sm"
+            <Button 
+              variant={useLocation ? "primary" : "outline"} 
+              size="sm" 
+              onClick={handleToggleLocation}
+              className="text-xs font-bold"
             >
-              {RECITERS.map(r => (
-                <option key={r.id} value={r.id}>{r.name}</option>
+              {useLocation ? 'مفعّل' : 'تفعيل'}
+            </Button>
+          </div>
+
+          {/* Manual City Select */}
+          {!useLocation && (
+            <div className="flex items-center justify-between p-4 bg-black/[0.02] dark:bg-white/[0.02]">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                  <Globe size={18} />
+                </div>
+                <div>
+                  <div className="font-bold text-sm">المدينة المحددة</div>
+                  <div className="text-xs text-text-muted">اختر مدينتك لحساب المواقيت والقبلة</div>
+                </div>
+              </div>
+              <select
+                value={selectedCity}
+                onChange={(e) => handleCityChange(e.target.value)}
+                className="bg-white dark:bg-card-dark border border-black/10 dark:border-white/10 rounded-xl p-2 text-xs font-bold outline-none cursor-pointer text-text-main dark:text-text-darkMain"
+              >
+                {CITIES.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} ({c.country})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Calculation Method */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-2">
+            <div>
+              <div className="font-bold text-sm">طريقة الحساب الفلكي</div>
+              <div className="text-xs text-text-muted">المعيار الفلكي المعتمد لزوايا الفجر والعشاء</div>
+            </div>
+            <select
+              value={calcMethod}
+              onChange={(e) => handleCalcMethodChange(e.target.value)}
+              className="bg-white dark:bg-card-dark border border-black/10 dark:border-white/10 rounded-xl p-2 text-xs font-bold outline-none cursor-pointer text-text-main dark:text-text-darkMain max-w-xs"
+            >
+              {CALC_METHODS.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                </option>
               ))}
+            </select>
+          </div>
+
+          {/* Asr Juristic Method */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-2">
+            <div>
+              <div className="font-bold text-sm">حساب صلاة العصر (المذهب الفقهي)</div>
+              <div className="text-xs text-text-muted">الجمهور (الشافعي، المالكي، الحنبلي) أو الحنفي</div>
+            </div>
+            <select
+              value={asrMethod}
+              onChange={(e) => {
+                setAsrMethod(e.target.value);
+                localStorage.setItem('prayer_asr_juristic', e.target.value);
+                localStorage.removeItem('prayer_timings_cache');
+                showToast('تم تحديث مذهب حساب صلاة العصر');
+              }}
+              className="bg-white dark:bg-card-dark border border-black/10 dark:border-white/10 rounded-xl p-2 text-xs font-bold outline-none cursor-pointer text-text-main dark:text-text-darkMain max-w-xs"
+            >
+              <option value="standard">الجمهور (شافعي، مالكي، حنبلي)</option>
+              <option value="hanafi">المذهب الحنفي</option>
             </select>
           </div>
         </Card>
       </section>
 
-      <section className="space-y-4">
-        <h2 className="text-xl font-bold text-text-muted">إشعارات الأذكار ومواقيت الصلاة</h2>
-        
-        {/* Layer 1 Adhan Audio Settings */}
-        <Card className="p-4 space-y-4">
+      {/* ==========================================
+          SECTION 3: ADHAN & NOTIFICATIONS
+      ========================================== */}
+      <section className="space-y-3">
+        <h2 className="text-sm font-bold text-text-muted flex items-center gap-2 px-1">
+          <BellRing size={16} className="text-primary" />
+          <span>الأذان والتنبيهات المتقدمة</span>
+        </h2>
+
+        {/* Master Adhan Card */}
+        <Card className="p-4 space-y-4 rounded-2xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Volume2 size={20} className="text-primary" />
+              <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                <Volume2 size={20} />
+              </div>
               <div>
-                <div className="font-semibold">الأذان الصوتي الفوري (Layer 1)</div>
-                <div className="text-xs text-text-muted">تشغيل صوت الأذان كاملاً تلقائياً طالما الصفحة مفتوحة</div>
+                <div className="font-bold text-sm">تشغيل صوت الأذان التلقائي</div>
+                <div className="text-xs text-text-muted">
+                  {isNative 
+                    ? 'منبهات أندرويد دقيقة تعمل في الخلفية حتى مع إغلاق الهاتف' 
+                    : 'يصدح صوت الأذان تلقائياً عند دخول وقت كل صلاة'}
+                </div>
               </div>
             </div>
             <Button 
               variant={adhanEnabled ? "primary" : "outline"} 
               size="sm" 
               onClick={toggleAdhan}
+              className="text-xs font-bold"
             >
               {adhanEnabled ? 'مفعّل' : 'تفعيل الأذان'}
             </Button>
           </div>
 
+          {/* Muezzin Voice Select & Test */}
+          <div className="border-t border-black/5 dark:border-white/5 pt-3 space-y-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="text-xs font-bold text-text-muted">صوت المؤذن المفضل:</div>
+              <div className="flex items-center gap-2">
+                <select
+                  value={selectedMuezzin}
+                  onChange={(e) => handleMuezzinChange(e.target.value)}
+                  className="bg-black/5 dark:bg-white/10 border-0 rounded-xl p-2 text-xs font-bold outline-none cursor-pointer"
+                >
+                  {MUEZZINS.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className={`text-xs gap-1 py-1.5 ${testAudioPlaying ? 'bg-primary text-white border-primary' : 'border-primary/40'}`}
+                  onClick={handleTestMuezzinVoice}
+                >
+                  {testAudioPlaying ? 'إيقاف ⏹️' : 'تجربة 🎧'}
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Individual Prayer Toggles */}
+          <div className="border-t border-black/5 dark:border-white/5 pt-3">
+            <div className="text-xs font-bold text-text-muted mb-2">تخصيص الأذان لكل صلاة:</div>
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+              {[
+                { key: 'fajr', label: 'الفجر' },
+                { key: 'sunrise', label: 'الشروق' },
+                { key: 'dhuhr', label: 'الظهر' },
+                { key: 'asr', label: 'العصر' },
+                { key: 'maghrib', label: 'المغرب' },
+                { key: 'isha', label: 'العشاء' },
+              ].map(({ key, label }) => {
+                const isSelected = prayerToggles[key as keyof typeof prayerToggles];
+                return (
+                  <button
+                    key={key}
+                    onClick={() => handlePrayerToggleChange(key as keyof typeof prayerToggles)}
+                    className={`py-2 px-2 rounded-xl text-xs font-bold transition-all border text-center cursor-pointer ${
+                      isSelected
+                        ? 'bg-primary/10 border-primary/40 text-primary dark:text-primary-light shadow-sm'
+                        : 'bg-black/5 dark:bg-white/5 border-transparent text-text-muted opacity-60'
+                    }`}
+                  >
+                    <div>{label}</div>
+                    <div className="text-[10px] mt-0.5">{isSelected ? '✓ منبه' : 'صامت'}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Audio Session & Test Alert */}
           <div className="border-t border-black/5 dark:border-white/5 pt-3 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className="text-xs text-text-muted">صلاحية الصوت للجلسة:</span>
-              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${audioUnlocked ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'}`}>
-                {audioUnlocked ? '🔊 مفعلة وموثوقة' : '⚠️ تحتاج تأكيد التفاعل'}
+              <span className="text-xs text-text-muted">حالة النظام:</span>
+              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${audioUnlocked || isNative ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'}`}>
+                {isNative ? '⚡ منبهات أندرويد نشطة' : audioUnlocked ? '🔊 الصوت مفعل' : '⚠️ يحتاج ضغطة لتفعيل الصوت'}
               </span>
             </div>
-            <div className="flex gap-2">
-              {!audioUnlocked && (
+
+            <div className="flex flex-wrap gap-2">
+              {!audioUnlocked && !isNative && (
                 <Button size="sm" variant="primary" className="text-xs gap-1" onClick={unlockAudio}>
-                  🔔 تفعيل الصوت الآن
+                  تفعيل الصوت
                 </Button>
               )}
               <Button size="sm" variant="outline" className="text-xs gap-1 border-primary/40" onClick={() => playTestAdhan()}>
-                🎧 سماع الأذان (تجربة)
+                🎧 سماع الأذان كاملاً
+              </Button>
+              <Button size="sm" variant="outline" className="text-xs gap-1 border-primary/40" onClick={handleSendTestNotification}>
+                🔔 تجربة إشعار فوري
               </Button>
             </div>
           </div>
         </Card>
 
-        <Card className="p-4 space-y-4">
+        {/* Adhkar & Islamic Reminders Card */}
+        <Card className="p-4 space-y-4 rounded-2xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <BellRing size={20} className="text-primary" />
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                <Sun size={20} />
+              </div>
               <div>
-                <div className="font-semibold">تنبيهات أذكار الصباح والمساء</div>
-                <div className="text-xs text-text-muted">إرسال إشعار تفاعلي مع إمكانية الاستماع الفوري</div>
+                <div className="font-bold text-sm">تنبيهات أذكار الصباح والمساء</div>
+                <div className="text-xs text-text-muted">إشعار تفاعلي مع إمكانية الاستماع الفوري للأذكار</div>
               </div>
             </div>
             <Button 
               variant={adhkarEnabled ? "primary" : "outline"} 
               size="sm" 
               onClick={handleToggleAdhkarAlerts}
+              className="text-xs font-bold"
             >
-              {adhkarEnabled ? 'مفعّلة' : 'تفعيل الإشعارات'}
+              {adhkarEnabled ? 'مفعّلة' : 'تفعيل'}
             </Button>
+          </div>
+
+          {/* Friday Kahf and Qiyam Night Reminders */}
+          <div className="border-t border-black/5 dark:border-white/5 pt-3 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-xs font-bold text-text-main dark:text-text-darkMain">تذكير سورة الكهف يوم الجمعة</div>
+                <div className="text-[10px] text-text-muted">إشعار صباح كل جمعة لقراءة سورة الكهف المباركة</div>
+              </div>
+              <Button
+                size="sm"
+                variant={fridayKahf ? "primary" : "outline"}
+                className="text-xs py-1"
+                onClick={() => {
+                  const next = !fridayKahf;
+                  setFridayKahf(next);
+                  localStorage.setItem('reminder_kahf_friday', String(next));
+                  showToast(next ? 'تم تفعيل تذكير سورة الكهف' : 'تم إيقاف تذكير سورة الكهف');
+                }}
+              >
+                {fridayKahf ? 'مفعّل ✓' : 'إيقاف'}
+              </Button>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-xs font-bold text-text-main dark:text-text-darkMain">تذكير قيام الليل وصلاة الوتر</div>
+                <div className="text-[10px] text-text-muted">تنبيه في الثلث الأخير من الليل لقيام الليل</div>
+              </div>
+              <Button
+                size="sm"
+                variant={qiyamNight ? "primary" : "outline"}
+                className="text-xs py-1"
+                onClick={() => {
+                  const next = !qiyamNight;
+                  setQiyamNight(next);
+                  localStorage.setItem('reminder_qiyam_night', String(next));
+                  showToast(next ? 'تم تفعيل تذكير قيام الليل' : 'تم إيقاف تذكير قيام الليل');
+                }}
+              >
+                {qiyamNight ? 'مفعّل ✓' : 'إيقاف'}
+              </Button>
+            </div>
           </div>
 
           <div className="border-t border-black/5 dark:border-white/5 pt-3 flex flex-wrap items-center justify-between gap-2">
@@ -160,109 +665,329 @@ export const Settings: React.FC = () => {
               <Button 
                 size="sm" 
                 variant="outline" 
-                className="text-xs gap-1 border-amber-500/50 text-amber-700 dark:text-amber-300 hover:bg-amber-500/10"
+                className="text-xs gap-1 border-amber-500/40 text-amber-700 dark:text-amber-300 hover:bg-amber-500/10"
                 onClick={() => handleTestAdhkar('morning')}
               >
-                <Sun size={14} /> ☀️ أذكار الصباح
+                <Sun size={13} /> ☀️ الصباح
               </Button>
               <Button 
                 size="sm" 
                 variant="outline" 
-                className="text-xs gap-1 border-indigo-500/50 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500/10"
+                className="text-xs gap-1 border-indigo-500/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500/10"
                 onClick={() => handleTestAdhkar('evening')}
               >
-                <Moon size={14} /> 🌙 أذكار المساء
+                <Moon size={13} /> 🌙 المساء
               </Button>
             </div>
           </div>
         </Card>
+      </section>
 
-        {/* Background Notifications (Layer 2) */}
-        <Card className="p-4 space-y-4">
-          <div className="flex items-center justify-between">
+      {/* ==========================================
+          SECTION 4: QURAN & RECITATION
+      ========================================== */}
+      <section className="space-y-3">
+        <h2 className="text-sm font-bold text-text-muted flex items-center gap-2 px-1">
+          <BookOpen size={16} className="text-primary" />
+          <span>المصحف الشريف والتلاوة</span>
+        </h2>
+
+        <Card className="divide-y divide-black/5 dark:divide-white/5 p-0 rounded-2xl overflow-hidden">
+          {/* Reciter Selector */}
+          <div className="flex items-center justify-between p-4">
             <div className="flex items-center gap-3">
-              <BellRing size={20} className="text-amber-600 dark:text-amber-400" />
+              <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                <Headphones size={18} />
+              </div>
               <div>
-                <div className="font-semibold">إشعارات مواقيت الصلاة في الخلفية (Layer 2)</div>
-                <div className="text-xs text-text-muted">تنبيهات منبثقة عند دخول وقت الصلاة عبر الـ Service Worker</div>
+                <div className="font-bold text-sm">القارئ المفضل لجميع السور</div>
+                <div className="text-xs text-text-muted">الشيخ المعتمد لتلاوة القرآن في المشغل العام</div>
               </div>
             </div>
-            <Button 
-              variant={backgroundNotificationService.isBackgroundEnabled() ? "primary" : "outline"} 
-              size="sm" 
-              onClick={async () => {
-                if (backgroundNotificationService.isBackgroundEnabled()) {
-                  await backgroundNotificationService.unsubscribeFromPush();
-                } else {
-                  await backgroundNotificationService.subscribeToPush();
-                }
-                window.location.reload();
-              }}
+            <select 
+              value={selectedReciter} 
+              onChange={handleReciterChange}
+              className="bg-white dark:bg-card-dark border border-black/10 dark:border-white/10 rounded-xl p-2 text-xs font-bold outline-none cursor-pointer text-text-main dark:text-text-darkMain max-w-[150px] sm:max-w-none"
             >
-              {backgroundNotificationService.isBackgroundEnabled() ? 'مفعّلة' : 'تفعيل إشعارات الخلفية'}
-            </Button>
+              {RECITERS.map(r => (
+                <option key={r.id} value={r.id}>{r.name}</option>
+              ))}
+            </select>
           </div>
 
-          <div className="border-t border-black/5 dark:border-white/5 pt-3 flex items-center justify-between">
-            <span className="text-xs text-text-muted">اختبار إشعار الخلفية (Service Worker Notification)</span>
-            <Button 
-              size="sm" 
-              variant="outline" 
-              className="text-xs border-primary/40"
-              onClick={async () => {
-                const ok = await backgroundNotificationService.sendTestBackgroundNotification({
-                  title: 'اختبار إشعار الصلاة في الخلفية 🕌',
-                  body: 'هذا إشعار تجريبي عبر Service Worker مستقل لتنبيهات الخلفية',
-                  url: '/prayer'
-                });
-                if (!ok) alert('يرجى السماح بالإشعارات في المتصفح أولاً.');
-              }}
-            >
-              🔔 إرسال إشعار تجريبي
-            </Button>
+          {/* Quran Font Size */}
+          <div className="p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                  <Type size={18} />
+                </div>
+                <div>
+                  <div className="font-bold text-sm">حجم خط الآيات القرآنية</div>
+                  <div className="text-xs text-text-muted">تخصيص حجم الخط أثناء تصفح المصحف</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-1 bg-black/5 dark:bg-white/5 p-1 rounded-xl">
+                {FONT_SIZES.map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => handleFontSizeChange(f.id)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      quranFontSize === f.id
+                        ? 'bg-primary text-white shadow-sm'
+                        : 'text-text-muted hover:text-text-main'
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Live Verse Preview Box */}
+            <div className="p-3 rounded-xl bg-primary/5 dark:bg-primary/10 border border-primary/15 text-center">
+              <p className="text-[11px] text-text-muted mb-1">معاينة مباشرة لحجم الخط:</p>
+              <p className={`font-quran text-primary-dark dark:text-primary-light ${currentFontSizeObj.sizeClass}`}>
+                ﴿ اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ ﴾
+              </p>
+            </div>
           </div>
         </Card>
       </section>
 
-      <section className="space-y-4">
-        <h2 className="text-xl font-bold text-text-muted">عام</h2>
-        <Card className="divide-y divide-black/5 dark:divide-white/5 p-0">
+      {/* ==========================================
+          SECTION 5: APPEARANCE & GENERAL
+      ========================================== */}
+      <section className="space-y-3">
+        <h2 className="text-sm font-bold text-text-muted flex items-center gap-2 px-1">
+          <Moon size={16} className="text-primary" />
+          <span>المظهر واللغة</span>
+        </h2>
+
+        <Card className="divide-y divide-black/5 dark:divide-white/5 p-0 rounded-2xl overflow-hidden">
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                {isDark ? <Moon size={18} /> : <Sun size={18} />}
+              </div>
+              <div>
+                <div className="font-bold text-sm">الوضع الداكن (Dark Mode)</div>
+                <div className="text-xs text-text-muted">مظهر ليلي مريح للعين وتوفير للبطارية</div>
+              </div>
+            </div>
+            <Button 
+              variant={isDark ? "primary" : "outline"} 
+              size="sm" 
+              onClick={toggleDarkMode}
+              className="text-xs font-bold"
+            >
+              {isDark ? 'مفعّل 🌙' : 'تفعيل ☀️'}
+            </Button>
+          </div>
+
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                <Globe size={18} />
+              </div>
+              <div>
+                <div className="font-bold text-sm">لغة التطبيق</div>
+                <div className="text-xs text-text-muted">اتجاه عربي أصيل من اليمين لليسار (RTL)</div>
+              </div>
+            </div>
+            <span className="text-xs font-bold text-primary dark:text-primary-light bg-primary/10 px-2.5 py-1 rounded-lg">
+              العربية (مكتمل)
+            </span>
+          </div>
+
           <div 
             onClick={() => navigate('/about')}
             className="flex items-center justify-between p-4 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <Heart size={20} className="text-rose-500 fill-rose-500/20" />
-              <span className="font-semibold">عن المطور والدعم (صدقة جارية)</span>
+              <div className="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center">
+                <Heart size={18} className="fill-current" />
+              </div>
+              <div>
+                <div className="font-bold text-sm">عن التطبيق والمطور (صدقة جارية)</div>
+                <div className="text-xs text-text-muted">معلومات المشروع والدعاء لمن ساهم فيه</div>
+              </div>
             </div>
-            <ChevronLeft size={20} className="text-text-muted" />
-          </div>
-
-          <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-            <div className="flex items-center gap-3">
-              <Globe size={20} className="text-primary" />
-              <span className="font-semibold">اللغة</span>
-            </div>
-            <span className="text-sm text-text-muted">العربية</span>
+            <ChevronLeft size={18} className="text-text-muted" />
           </div>
         </Card>
       </section>
 
-      <section className="space-y-4">
-        <h2 className="text-xl font-bold text-red-500">منطقة الخطر</h2>
-        <Card className="p-0 border-red-200 dark:border-red-900 overflow-hidden">
-          <div className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-950/20">
-            <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
-              <Trash2 size={20} />
-              <span className="font-semibold">حذف جميع البيانات</span>
+      {/* ==========================================
+          SECTION 6: BACKUP & DATA
+      ========================================== */}
+      <section className="space-y-3">
+        <h2 className="text-sm font-bold text-text-muted flex items-center gap-2 px-1">
+          <ShieldCheck size={16} className="text-primary" />
+          <span>البيانات والنسخ الاحتياطي</span>
+        </h2>
+
+        <Card className="divide-y divide-black/5 dark:divide-white/5 p-0 rounded-2xl overflow-hidden">
+          {/* Export Bookmarks */}
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                <ArrowDownToLine size={18} />
+              </div>
+              <div>
+                <div className="font-bold text-sm">تصدير نسخة احتياطية</div>
+                <div className="text-xs text-text-muted">حفظ آياتك وسورك المحفوظة وإعداداتك في ملف خارجي</div>
+              </div>
             </div>
-            <Button variant="outline" size="sm" className="border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/50">
-              حذف
+            <Button size="sm" variant="outline" className="text-xs font-bold border-primary/30" onClick={handleExportData}>
+              تصدير JSON 💾
+            </Button>
+          </div>
+
+          {/* Reset All Data */}
+          <div className="flex items-center justify-between p-4 bg-red-50/50 dark:bg-red-950/15">
+            <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
+              <div className="w-9 h-9 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center">
+                <Trash2 size={18} />
+              </div>
+              <div>
+                <div className="font-bold text-sm">استعادة ضبط المصنع</div>
+                <div className="text-xs text-text-muted">مسح كافة المحفوظات، سجل القراءة، والإعدادات المخصصة</div>
+              </div>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="border-red-500/50 text-red-500 hover:bg-red-500 hover:text-white text-xs font-bold"
+              onClick={() => setShowResetConfirmModal(true)}
+            >
+              حذف البيانات
             </Button>
           </div>
         </Card>
-        <p className="text-xs text-text-muted px-2">سيتم حذف جميع إعداداتك ومفضلاتك وآخر موضع قراءة.</p>
       </section>
+
+      {/* ==========================================
+          MODAL: APK INSTALL & SHARING GUIDE
+      ========================================== */}
+      {showApkGuideModal && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setShowApkGuideModal(false)}
+        >
+          <div 
+            className="w-full max-w-lg rounded-3xl bg-white dark:bg-[#1A1E24] border border-primary/30 shadow-2xl p-6 text-text-main dark:text-text-darkMain space-y-5 relative animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setShowApkGuideModal(false)}
+              className="absolute top-4 left-4 w-8 h-8 rounded-full bg-black/5 dark:bg-white/10 text-text-muted hover:text-text-main flex items-center justify-center transition-colors cursor-pointer"
+            >
+              <X size={16} />
+            </button>
+
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-primary/15 text-primary flex items-center justify-center shrink-0">
+                <Smartphone size={24} />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg text-primary dark:text-primary-light">
+                  تثبيت ومشاركة تطبيق هداية للأندرويد
+                </h3>
+                <p className="text-xs text-text-muted">ملف APK مستقل كامل الميزات لأجهزة أندرويد</p>
+              </div>
+            </div>
+
+            <div className="space-y-3 text-xs leading-relaxed text-text-muted bg-black/[0.02] dark:bg-white/[0.02] p-4 rounded-2xl border border-black/5 dark:border-white/5">
+              <div className="flex items-start gap-2.5">
+                <span className="w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">1</span>
+                <div>
+                  <strong className="text-text-main dark:text-text-darkMain block">البناء التلقائي عبر GitHub Actions:</strong>
+                  تم إعداد سير عمل سحابي تلقائي؛ بمجرد عمل Push لمشروعك، يتم توليد ملف <code className="text-primary font-bold">app-debug.apk</code> تلقائياً وجاهز للتنزيل بنقرة واحدة من تبويب Actions.
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2.5">
+                <span className="w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">2</span>
+                <div>
+                  <strong className="text-text-main dark:text-text-darkMain block">البناء المحلي (Local Build):</strong>
+                  إذا كان لديك Android Studio، يمكنك تشغيل الأمر <code className="bg-black/10 dark:bg-white/10 px-1 py-0.5 rounded font-mono">npm run build:apk</code> ثم فتح المشروع وتوليد ملف APK مباشرة.
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2.5">
+                <span className="w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">3</span>
+                <div>
+                  <strong className="text-text-main dark:text-text-darkMain block">تثبيت سهل ومباشر:</strong>
+                  أرسل ملف الـ APK لنفسك أو لأي شخص عبر واتساب أو تليجرام وافتحه على الهاتف لتثبيته في ثوانٍ معدودة.
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <Button
+                variant="primary"
+                className="flex-1 py-3 text-xs font-bold gap-2"
+                onClick={handleShareApp}
+              >
+                <Share2 size={16} />
+                <span>مشاركة رابط التطبيق</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="py-3 text-xs font-bold"
+                onClick={() => setShowApkGuideModal(false)}
+              >
+                إغلاق
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==========================================
+          MODAL: RESET ALL DATA CONFIRMATION
+      ========================================== */}
+      {showResetConfirmModal && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setShowResetConfirmModal(false)}
+        >
+          <div 
+            className="w-full max-w-md rounded-3xl bg-white dark:bg-[#1C2026] p-6 text-center space-y-4 shadow-2xl border border-black/10 dark:border-white/10 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-14 h-14 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center mx-auto">
+              <AlertTriangle size={28} />
+            </div>
+
+            <div className="space-y-1">
+              <h3 className="text-lg font-bold text-text-main dark:text-text-darkMain">
+                استعادة ضبط المصنع؟
+              </h3>
+              <p className="text-xs text-text-muted leading-relaxed">
+                سيتم مسح كافة البيانات والمحفوظات المسجلة ومواقيت الصلاة وإعادة التطبيق إلى حالته الأصلية. هل أنت متأكد؟
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                onClick={() => setShowResetConfirmModal(false)}
+                className="flex-1 py-2.5 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-black/10 text-text-main dark:text-text-darkMain text-xs font-bold transition-colors cursor-pointer"
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={handleResetAllData}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-bold transition-colors shadow-md cursor-pointer"
+              >
+                نعم، مسح البيانات
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
