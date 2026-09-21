@@ -70,7 +70,6 @@ jobs:
             - تلاوات وقراء متعددون وتحكم كامل في حجم خط المصحف وتغيير صوت المؤذن.
             - نظام التحديث التلقائي In-App Update المدعوم بشهادة توقيع Release موحدة.
           files: android/app/build/outputs/apk/release/app-release.apk
-          overwrite: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
