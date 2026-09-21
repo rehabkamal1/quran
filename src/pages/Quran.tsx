@@ -14,6 +14,7 @@ import { useGlobalPlayer } from '../context/GlobalPlayerContext';
 import { audioService } from '../services/audioService';
 import { storage } from '../services/storage';
 import type { Bookmark as BookmarkType, LastRead } from '../services/storage';
+import { getQuranFontSize, getQuranFontSizeClass } from '../data/quranSettings';
 
 const downloadSurahMp3 = async (surahNumber: number, surahName: string) => {
   const sourceUrl = audioService.getSurahAudioUrl(surahNumber);
@@ -85,6 +86,19 @@ export const Quran: React.FC = () => {
   const [bookmarkedSurahIds, setBookmarkedSurahIds] = useState<number[]>([]);
   const [bookmarks, setBookmarks] = useState<BookmarkType[]>([]);
   const [lastRead, setLastRead] = useState<LastRead | null>(null);
+  const [fontSize, setFontSize] = useState(() => getQuranFontSize());
+
+  useEffect(() => {
+    const handleFontChange = () => {
+      setFontSize(getQuranFontSize());
+    };
+    window.addEventListener('quran_font_size_changed', handleFontChange);
+    window.addEventListener('storage', handleFontChange);
+    return () => {
+      window.removeEventListener('quran_font_size_changed', handleFontChange);
+      window.removeEventListener('storage', handleFontChange);
+    };
+  }, []);
 
   // Modals & Feedback
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -720,7 +734,7 @@ export const Quran: React.FC = () => {
                   {/* Basmalah & Verse Body */}
                   <div className="py-6 text-center space-y-3">
                     <p className="text-xs text-primary/70 font-quran">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
-                    <p className="font-quran text-2xl md:text-3xl leading-loose text-white/95 px-2 select-text">
+                    <p className={`font-quran ${getQuranFontSizeClass(fontSize)} leading-loose text-white/95 px-2 select-text transition-all duration-200`}>
                       ﴿ {bookmark.text} ﴾
                     </p>
                   </div>
@@ -899,7 +913,7 @@ export const Quran: React.FC = () => {
 
                       {/* Verse Body */}
                       <div className="py-2.5 px-3 rounded-xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 mb-4">
-                        <p className="font-quran text-xl md:text-2xl text-right leading-loose text-text-main dark:text-text-darkMain select-text">
+                        <p className={`font-quran ${getQuranFontSizeClass(fontSize)} text-right leading-loose text-text-main dark:text-text-darkMain select-text transition-all duration-200`}>
                           ﴿ {bookmark.text} ﴾
                         </p>
                       </div>

@@ -27,20 +27,8 @@ const CALC_METHODS = [
   { id: 'qatar', name: 'قطر' },
 ];
 
-const MUEZZINS = [
-  { id: 'makkah', name: 'أذان الحرم المكي الشريف', url: '/audio/adhan.mp3' },
-  { id: 'madinah', name: 'أذان الحرم المدني الشريف', url: '/audio/adhan.mp3' },
-  { id: 'alaqsa', name: 'أذان المسجد الأقصى المبارك', url: '/audio/adhan.mp3' },
-  { id: 'abdulbasit', name: 'أذان الشيخ عبد الباسط عبد الصمد', url: '/audio/adhan.mp3' },
-  { id: 'alafasy', name: 'أذان الشيخ مشاري راشد العفاسي', url: '/audio/adhan.mp3' },
-];
-
-const FONT_SIZES = [
-  { id: 'sm', label: 'صغير', sizeClass: 'text-lg leading-relaxed' },
-  { id: 'md', label: 'متوسط', sizeClass: 'text-2xl leading-loose' },
-  { id: 'lg', label: 'كبير', sizeClass: 'text-3xl leading-loose' },
-  { id: 'xl', label: 'كبير جداً', sizeClass: 'text-4xl leading-loose' },
-];
+import { MUEZZINS } from '../data/muezzins';
+import { QURAN_FONT_SIZES, setQuranFontSize as saveQuranFontSize } from '../data/quranSettings';
 
 export const Settings: React.FC = () => {
   const { isDark, toggleDarkMode } = useDarkMode();
@@ -137,9 +125,14 @@ export const Settings: React.FC = () => {
   };
 
   const handleMuezzinChange = (muezzinId: string) => {
+    if (audioPlayerInstance) {
+      audioPlayerInstance.pause();
+      setTestAudioPlaying(false);
+    }
     setSelectedMuezzin(muezzinId);
     localStorage.setItem('adhan_muezzin_voice', muezzinId);
-    showToast('تم تغيير صوت الأذان');
+    const m = MUEZZINS.find(item => item.id === muezzinId);
+    showToast(`تم اختيار ${m?.name || 'صوت الأذان'}`);
   };
 
   const handleTestMuezzinVoice = () => {
@@ -158,8 +151,23 @@ export const Settings: React.FC = () => {
         audio.onended = () => setTestAudioPlaying(false);
       })
       .catch((err) => {
-        console.error('Audio test failed:', err);
-        showToast('تعذر تشغيل الصوت، يرجى النقر على الشاشة أولاً لتفعيل صلاحيات الصوت');
+        console.warn('Local audio test failed, trying backup URL:', err);
+        if (muezzin.backupUrl) {
+          audio.src = muezzin.backupUrl;
+          audio.play()
+            .then(() => {
+              setTestAudioPlaying(true);
+              setAudioPlayerInstance(audio);
+              audio.onended = () => setTestAudioPlaying(false);
+            })
+            .catch(() => {
+              setTestAudioPlaying(false);
+              showToast('تعذر تشغيل الصوت، يرجى النقر على الشاشة أولاً لتفعيل صلاحيات الصوت');
+            });
+        } else {
+          setTestAudioPlaying(false);
+          showToast('تعذر تشغيل الصوت، يرجى النقر على الشاشة أولاً لتفعيل صلاحيات الصوت');
+        }
       });
   };
 
@@ -226,8 +234,8 @@ export const Settings: React.FC = () => {
 
   const handleFontSizeChange = (sizeId: string) => {
     setQuranFontSize(sizeId);
-    localStorage.setItem('quran_font_size', sizeId);
-    showToast(`تم تغيير حجم الخط إلى (${FONT_SIZES.find(f => f.id === sizeId)?.label})`);
+    saveQuranFontSize(sizeId as any);
+    showToast(`تم تغيير حجم الخط إلى (${QURAN_FONT_SIZES.find(f => f.id === sizeId)?.label})`);
   };
 
   const handleShareApp = async () => {
@@ -308,7 +316,7 @@ export const Settings: React.FC = () => {
     }, 800);
   };
 
-  const currentFontSizeObj = FONT_SIZES.find(f => f.id === quranFontSize) || FONT_SIZES[1];
+  const currentFontSizeObj = QURAN_FONT_SIZES.find(f => f.id === quranFontSize) || QURAN_FONT_SIZES[1];
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in duration-500 pb-24">
@@ -746,7 +754,7 @@ export const Settings: React.FC = () => {
                 </div>
               </div>
               <div className="flex items-center gap-1 bg-black/5 dark:bg-white/5 p-1 rounded-xl">
-                {FONT_SIZES.map((f) => (
+                {QURAN_FONT_SIZES.map((f) => (
                   <button
                     key={f.id}
                     onClick={() => handleFontSizeChange(f.id)}

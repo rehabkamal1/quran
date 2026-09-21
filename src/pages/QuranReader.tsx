@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Play, Pause, Settings, ChevronRight, ChevronLeft, Bookmark, BookOpen, Share2, Check, Repeat, Disc } from 'lucide-react';
+import { Play, Pause, Settings, ChevronRight, ChevronLeft, Bookmark, BookOpen, Share2, Check, Repeat, Disc, Type } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { quranApi } from '../services/quranApi';
 import type { SurahData, Ayah, TafsirData } from '../services/quranApi';
 import { audioService, RECITERS } from '../services/audioService';
 import { storage } from '../services/storage';
+import { getQuranFontSize, setQuranFontSize, getQuranFontSizeClass, QURAN_FONT_SIZES } from '../data/quranSettings';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGlobalPlayer } from '../context/GlobalPlayerContext';
 
@@ -25,7 +26,22 @@ export const QuranReader: React.FC = () => {
   const [showReciterMenu, setShowReciterMenu] = useState(false);
   const [currentReciter, setCurrentReciter] = useState(() => audioService.getReciter());
   
+  const [fontSize, setFontSize] = useState(() => getQuranFontSize());
+  const [showFontMenu, setShowFontMenu] = useState(false);
+
   const readerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleFontChange = () => {
+      setFontSize(getQuranFontSize());
+    };
+    window.addEventListener('quran_font_size_changed', handleFontChange);
+    window.addEventListener('storage', handleFontChange);
+    return () => {
+      window.removeEventListener('quran_font_size_changed', handleFontChange);
+      window.removeEventListener('storage', handleFontChange);
+    };
+  }, []);
 
   // Global Player Context for Background Playback & Full Surah
   const { 
@@ -163,7 +179,52 @@ export const QuranReader: React.FC = () => {
             {surah.revelationType === 'Meccan' ? 'مكية' : 'مدنية'} • {surah.ayahs.length} آيات
           </p>
         </div>
-        <div className="w-10"></div> {/* Spacer */}
+        <div className="relative">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setShowFontMenu(!showFontMenu)}
+            className={`rounded-xl ${showFontMenu ? 'bg-primary/10 text-primary' : 'text-text-muted hover:text-text-main'}`}
+            title="تغيير حجم خط الآيات"
+          >
+            <Type size={20} />
+          </Button>
+
+          {/* Quick Font Size Dropdown in Header */}
+          <AnimatePresence>
+            {showFontMenu && (
+              <motion.div
+                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                className="absolute left-0 top-12 z-50 bg-white dark:bg-card-dark shadow-xl rounded-2xl p-2 border border-black/5 dark:border-white/10 min-w-[150px] text-right"
+                dir="rtl"
+              >
+                <div className="text-[11px] font-bold text-text-muted px-2 py-1 border-b border-black/5 dark:border-white/5 mb-1">
+                  حجم خط الآيات:
+                </div>
+                {QURAN_FONT_SIZES.map(f => (
+                  <button
+                    key={f.id}
+                    onClick={() => {
+                      setFontSize(f.id);
+                      setQuranFontSize(f.id);
+                      setShowFontMenu(false);
+                    }}
+                    className={`flex items-center justify-between w-full px-3 py-2 rounded-xl text-xs font-bold transition-colors ${
+                      fontSize === f.id
+                        ? 'bg-primary text-white'
+                        : 'text-text-main dark:text-text-darkMain hover:bg-black/5 dark:hover:bg-white/5'
+                    }`}
+                  >
+                    <span>{f.label}</span>
+                    {fontSize === f.id && <Check size={14} />}
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
       {/* Full Surah Play Bar */}
@@ -242,7 +303,7 @@ export const QuranReader: React.FC = () => {
 
               {/* Card Content - Verse Text */}
               <div className="text-center py-4">
-                <p className={`font-quran text-2xl md:text-3xl leading-loose text-text-main dark:text-text-darkMain ${
+                <p className={`font-quran select-text transition-all duration-200 ${getQuranFontSizeClass(fontSize)} text-text-main dark:text-text-darkMain ${
                   isActive ? 'text-primary-dark dark:text-primary-light' : ''
                 }`}>
                   {ayahText}
@@ -358,7 +419,30 @@ export const QuranReader: React.FC = () => {
               className="bg-white dark:bg-card-dark shadow-2xl rounded-2xl p-3 border border-black/5 dark:border-white/10 flex flex-col gap-1 w-full text-right"
               dir="rtl"
             >
-              <div className="text-xs font-bold text-text-muted px-3 py-2 border-b border-black/5 dark:border-white/5 text-right font-sans">
+              <div className="text-xs font-bold text-text-muted px-2 py-1.5 border-b border-black/5 dark:border-white/5 text-right font-sans flex items-center justify-between">
+                <span>حجم خط الآيات:</span>
+                <span className="text-[11px] text-primary font-bold">{QURAN_FONT_SIZES.find(f => f.id === fontSize)?.label}</span>
+              </div>
+              <div className="grid grid-cols-4 gap-1 p-1 my-1 bg-black/5 dark:bg-white/5 rounded-xl">
+                {QURAN_FONT_SIZES.map(f => (
+                  <button
+                    key={f.id}
+                    onClick={() => {
+                      setFontSize(f.id);
+                      setQuranFontSize(f.id);
+                    }}
+                    className={`py-1 text-xs font-bold rounded-lg transition-colors ${
+                      fontSize === f.id
+                        ? 'bg-primary text-white shadow-sm'
+                        : 'text-text-muted hover:text-text-main'
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="text-xs font-bold text-text-muted px-2 py-1.5 border-b border-black/5 dark:border-white/5 text-right font-sans mt-1">
                 اختر القارئ:
               </div>
               {RECITERS.map(reciter => (

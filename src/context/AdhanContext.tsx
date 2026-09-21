@@ -24,6 +24,7 @@ interface AdhanContextType {
 const AdhanContext = createContext<AdhanContextType | undefined>(undefined);
 
 import { findCity } from '../data/cities';
+import { getMuezzinAudioUrl, getMuezzinById } from '../data/muezzins';
 
 export const parsePrayerMinutes = (timeStr: string): number | null => {
   if (!timeStr || typeof timeStr !== 'string') return null;
@@ -94,8 +95,9 @@ export const AdhanProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [audioUnlocked]);
 
   const getAudioElement = (): HTMLAudioElement => {
+    const audioUrl = getMuezzinAudioUrl();
     if (!audioRef.current) {
-      const audio = new Audio('/audio/adhan.mp3');
+      const audio = new Audio(audioUrl);
       audio.preload = 'auto';
       audioRef.current = audio;
     }
@@ -125,10 +127,13 @@ export const AdhanProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     console.log(`[Adhan] audio unlocked: ${audioUnlockedRef.current}`);
     console.log(`[Adhan] attempting playback for: ${prayerName}`);
 
+    const audioUrl = getMuezzinAudioUrl();
+    console.log(`[Adhan] playing muezzin audio URL: ${audioUrl}`);
+
     const audio = getAudioElement();
     audio.pause();
     audio.currentTime = 0;
-    audio.src = '/audio/adhan.mp3';
+    audio.src = audioUrl;
     setIsPlaying(true);
     setCurrentPrayerName(prayerName);
 
@@ -136,13 +141,24 @@ export const AdhanProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (playPromise !== undefined) {
       playPromise
         .then(() => {
-          console.log(`[Adhan] audio.play SUCCESS for ${prayerName} at ${new Date().toLocaleTimeString()}`);
+          console.log(`[Adhan] audio.play SUCCESS for ${prayerName} (${audioUrl}) at ${new Date().toLocaleTimeString()}`);
         })
         .catch((err: any) => {
           console.error(`[Adhan] audio.play FAILED for ${prayerName}`);
           console.error(`Error name: ${err?.name || 'Unknown'}`);
           console.error(`Error message: ${err?.message || 'Failed to play'}`);
-          setIsPlaying(false);
+          
+          // Fallback to default adhan if custom voice fails
+          if (!audioUrl.endsWith('/audio/adhan.mp3')) {
+            console.warn('[Adhan] Attempting fallback to /audio/adhan.mp3');
+            audio.src = '/audio/adhan.mp3';
+            audio.play().catch(fallbackErr => {
+              console.error('[Adhan] Fallback also failed:', fallbackErr);
+              setIsPlaying(false);
+            });
+          } else {
+            setIsPlaying(false);
+          }
         });
     }
 
@@ -323,7 +339,8 @@ export const AdhanProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (nativeNotificationService.isNative()) {
       await nativeNotificationService.sendTestNotification();
     }
-    playAdhan('تجربة الأذان');
+    const muezzin = getMuezzinById();
+    playAdhan(`تجربة الأذان (${muezzin.name})`);
   };
 
   // Monitor & Schedule prayer times on load & visibility change
