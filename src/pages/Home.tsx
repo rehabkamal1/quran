@@ -3,16 +3,40 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import {
   BookOpen, Compass, Heart, Activity, Bookmark, Clock,
-  Radio, ShieldCheck, ChevronLeft, Calendar
+  Radio, ShieldCheck, ChevronLeft, Calendar, CheckCircle2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { storage } from '../services/storage';
 import type { LastRead } from '../services/storage';
 import { quranApi } from '../services/quranApi';
-import { prayerApi } from '../services/prayerApi';
+import { prayerApi, calculatePrayerTimesOffline } from '../services/prayerApi';
 import type { PrayerTimes } from '../services/prayerApi';
 import { notificationService } from '../services/notificationService';
 import { findCity } from '../data/cities';
+import { parsePrayerMinutes } from '../context/AdhanContext';
+
+export interface DailyHabitsState {
+  streakDays: number;
+  quranCompleted: boolean;
+  morningAdhkarCompleted: boolean;
+  eveningAdhkarCompleted: boolean;
+  worshipMinutes: number;
+  completedDays: boolean[];
+}
+
+const DEFAULT_DAILY_HABITS: DailyHabitsState = {
+  streakDays: 14,
+  quranCompleted: true,
+  morningAdhkarCompleted: true,
+  eveningAdhkarCompleted: false,
+  worshipMinutes: 45,
+  completedDays: [true, true, true, true, true, true, true, true, true, true, true, true, true, true]
+};
+
+const DEFAULT_DAILY_AYAH = {
+  text: "إِنَّ مَعَ الْعُسْرِ يُسْرًا",
+  surah: "سورة الشرح • الآية 6"
+};
 
 const DAILY_DHIKRS = [
   "أَسْتَغْفِرُ اللَّهَ وَأَتُوبُ إِلَيْهِ",
@@ -49,27 +73,40 @@ const getDayOfYear = (): number => {
 };
 
 const parsePrayerTime = (timeStr: string, date: Date = new Date()): Date => {
-  if (!timeStr) return new Date();
-  // Strip timezone suffix like "(EEST)" or "(EST)" safely
-  const cleanTime = timeStr.split(' ')[0].trim();
-  const parts = cleanTime.split(':');
-  const hours = parseInt(parts[0], 10) || 0;
-  const minutes = parseInt(parts[1], 10) || 0;
   const parsed = new Date(date);
-  parsed.setHours(hours, minutes, 0, 0);
+  const minutes = parsePrayerMinutes(timeStr);
+  if (minutes !== null) {
+    parsed.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
+  } else {
+    parsed.setHours(0, 0, 0, 0);
+  }
   return parsed;
 };
 
 export const Home: React.FC = () => {
   const navigate = useNavigate();
   const [lastRead, setLastRead] = useState<LastRead | null>(null);
-  const [dailyAyah, setDailyAyah] = useState<{ text: string, surah: string }>({ text: '', surah: '' });
+  const [dailyAyah, setDailyAyah] = useState<{ text: string, surah: string }>(DEFAULT_DAILY_AYAH);
   const [dhikrOfDay, setDhikrOfDay] = useState('');
   const [duaOfDay, setDuaOfDay] = useState('');
   const [alertsEnabled, setAlertsEnabled] = useState(() => notificationService.isEnabled());
 
-  // Dynamic Prayer Timer State
-  const [prayerTimings, setPrayerTimings] = useState<PrayerTimes | null>(null);
+  // Dynamic Prayer Timer State - Initialized synchronously so UI is never blank
+  const [prayerTimings, setPrayerTimings] = useState<PrayerTimes | null>(() => {
+    try {
+      const selectedCity = localStorage.getItem('prayer_selected_city') || 'Cairo';
+      const cityInfo = findCity(selectedCity);
+      const calcMethod = localStorage.getItem('prayer_calc_method') || 'egypt';
+      const asrMethod = localStorage.getItem('prayer_asr_juristic') || 'standard';
+      const cachedLat = localStorage.getItem('prayer_lat');
+      const cachedLng = localStorage.getItem('prayer_lng');
+      const lat = cachedLat ? Number(cachedLat) : cityInfo.lat;
+      const lng = cachedLng ? Number(cachedLng) : cityInfo.lng;
+      return calculatePrayerTimesOffline(lat, lng, new Date(), calcMethod, asrMethod);
+    } catch {
+      return null;
+    }
+  });
   const [nowDate, setNowDate] = useState(() => new Date());
 
   // Modal states
@@ -77,35 +114,40 @@ export const Home: React.FC = () => {
   const [showRamadanModal, setShowRamadanModal] = useState(false);
   const [ramadanCountdown, setRamadanCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
-  // Interactive Daily Habits & Streak State
-  interface DailyHabitsState {
-    streakDays: number;
-    quranCompleted: boolean;
-    morningAdhkarCompleted: boolean;
-    eveningAdhkarCompleted: boolean;
-    worshipMinutes: number;
-    completedDays: boolean[];
-  }
-
+  // Interactive Daily Habits & Streak State with defensive fallback
   const [habits, setHabits] = useState<DailyHabitsState>(() => {
     try {
       const saved = localStorage.getItem('hedayah_daily_habits');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const validCompletedDays = Array.isArray(parsed?.completedDays) && parsed.completedDays.length === 14
+          ? parsed.completedDays
+          : DEFAULT_DAILY_HABITS.completedDays;
+
+        return {
+          ...DEFAULT_DAILY_HABITS,
+          ...parsed,
+          streakDays: typeof parsed?.streakDays === 'number' ? parsed.streakDays : DEFAULT_DAILY_HABITS.streakDays,
+          completedDays: validCompletedDays
+        };
+      }
     } catch {}
-    return {
-      streakDays: 14,
-      quranCompleted: true,
-      morningAdhkarCompleted: true,
-      eveningAdhkarCompleted: false,
-      worshipMinutes: 45,
-      completedDays: [true, true, true, true, true, true, true, true, true, true, true, true, true, true]
-    };
+    return DEFAULT_DAILY_HABITS;
   });
 
   const updateHabits = (updater: (prev: DailyHabitsState) => DailyHabitsState) => {
     setHabits(prev => {
-      const next = updater(prev);
-      localStorage.setItem('hedayah_daily_habits', JSON.stringify(next));
+      const safePrev: DailyHabitsState = {
+        ...DEFAULT_DAILY_HABITS,
+        ...prev,
+        completedDays: Array.isArray(prev?.completedDays) && prev.completedDays.length === 14
+          ? prev.completedDays
+          : DEFAULT_DAILY_HABITS.completedDays
+      };
+      const next = updater(safePrev);
+      try {
+        localStorage.setItem('hedayah_daily_habits', JSON.stringify(next));
+      } catch {}
       return next;
     });
   };
@@ -481,9 +523,9 @@ export const Home: React.FC = () => {
         <div className="grid grid-cols-2 gap-4">
           <Card className="p-6 bg-cyan-50 dark:bg-cyan-900/20 border-0 flex flex-col justify-center items-center text-center">
             <div className="flex items-center gap-2 text-cyan-700 dark:text-cyan-500 font-bold mb-3">
-              <CheckCircle size={18} /> ذكر اليوم
+              <CheckCircle2 size={18} /> ذكر اليوم
             </div>
-            <p className="font-quran text-xl text-gray-800 dark:text-gray-200">{dhikrOfDay || 'أَسْتَغْفِرُ اللَّهَ وَأَتُوبُ إِلَيْهِ'}</p>
+            <p className="font-quran text-xl text-gray-800 dark:text-gray-200">{dhikrOfDay || 'أَسْتَغْفِرُ اللَّهَ وَأَتُوبُ إِلَيْهِ'}</p>
           </Card>
 
           <Card className="p-6 bg-rose-50 dark:bg-rose-900/20 border-0 flex flex-col justify-center items-center text-center">
@@ -741,16 +783,19 @@ export const Home: React.FC = () => {
               <div className="flex items-center justify-between text-xs font-bold">
                 <span className="text-gray-700 dark:text-gray-300">أيام المواظبة الـ 14 الأخيرة:</span>
                 <span className="text-[11px] text-emerald-600 dark:text-emerald-400">
-                  {habits.completedDays.filter(Boolean).length} / 14 يوم مكتمل
+                  {(habits?.completedDays || DEFAULT_DAILY_HABITS.completedDays).filter(Boolean).length} / 14 يوم مكتمل
                 </span>
               </div>
               <div className="grid grid-cols-7 gap-2 text-center pt-1">
-                {habits.completedDays.map((isDone, i) => (
+                {(habits?.completedDays || DEFAULT_DAILY_HABITS.completedDays).map((isDone, i) => (
                   <button
                     key={i}
                     onClick={() => {
                       updateHabits(h => {
-                        const updated = [...h.completedDays];
+                        const baseDays = Array.isArray(h?.completedDays) && h.completedDays.length === 14
+                          ? h.completedDays
+                          : DEFAULT_DAILY_HABITS.completedDays;
+                        const updated = [...baseDays];
                         updated[i] = !updated[i];
                         const count = updated.filter(Boolean).length;
                         return { ...h, completedDays: updated, streakDays: count };
@@ -978,11 +1023,3 @@ export const Home: React.FC = () => {
     </div>
   );
 };
-
-// CheckCircle Icon definition (missing in original imports)
-const CheckCircle = ({ size, className }: { size: number, className?: string }) => (
-  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-  </svg>
-);
