@@ -11,7 +11,12 @@ export default defineConfig({
       srcDir: 'src',
       filename: 'sw.ts',
       registerType: 'prompt',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png', 'logo.png'],
+      includeAssets: [
+        'favicon.ico', 'favicon.svg', 'apple-touch-icon.png', 
+        'pwa-192x192.png', 'pwa-512x512.png', 
+        'pwa-maskable-192x192.png', 'pwa-maskable-512x512.png', 
+        'logo.png'
+      ],
       injectManifest: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
         maximumFileSizeToCacheInBytes: 30 * 1024 * 1024, // Allow up to 30MB precache
@@ -27,10 +32,34 @@ export default defineConfig({
         lang: 'ar',
         icons: [
           {
-            src: 'logo.png',
+            src: 'pwa-192x192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any'
+          },
+          {
+            src: 'pwa-512x512.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable'
+            purpose: 'any'
+          },
+          {
+            src: 'pwa-maskable-192x192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'maskable'
+          },
+          {
+            src: 'pwa-maskable-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
+          },
+          {
+            src: 'logo.png',
+            sizes: '1024x1024',
+            type: 'image/png',
+            purpose: 'any'
           }
         ]
       }

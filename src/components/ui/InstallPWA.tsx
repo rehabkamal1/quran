@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from './Card';
 import { Button } from './Button';
-import { Download, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const InstallPWA: React.FC = () => {
@@ -71,8 +71,8 @@ export const InstallPWA: React.FC = () => {
             </button>
             
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center text-white shrink-0 shadow-lg">
-                <Download size={24} />
+              <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-lg border border-primary/20 shrink-0 bg-primary/10">
+                <img src="/pwa-192x192.png" alt="هداية" className="w-full h-full object-cover" />
               </div>
               <div className="space-y-2">
                 <h3 className="font-bold text-lg leading-none">تثبيت تطبيق "هداية"</h3>
