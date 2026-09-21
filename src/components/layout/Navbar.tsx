@@ -22,8 +22,8 @@ export const Navbar: React.FC = () => {
     <header className="sticky top-0 z-50 w-full border-b border-black/5 dark:border-white/5 bg-background/80 dark:bg-background-dark/80 backdrop-blur-md hidden md:block">
       <div className="container mx-auto px-6 h-20 flex items-center justify-between">
         {/* Logo */}
-        <NavLink to="/" className="flex items-center gap-2">
-          <img src="/logo.png" alt="Huda Logo" className="w-10 h-10 object-contain drop-shadow-md rounded-lg" />
+        <NavLink to="/" className="flex items-center gap-2.5">
+          <img src="/logo.png?v=5" alt="شعار هداية" className="w-10 h-10 object-contain drop-shadow-md rounded-xl" />
           <h1 className="text-2xl font-bold font-quran text-primary dark:text-primary-light">
             هداية
           </h1>

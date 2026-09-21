@@ -15,6 +15,16 @@ export const Layout: React.FC = () => {
 
   React.useEffect(() => {
     document.title = "هداية - منصة قرآنية";
+
+    // Dynamically set favicon to break browser cache of old projects
+    const iconLink = (document.querySelector("link[rel*='icon']") as HTMLLinkElement) || document.createElement('link');
+    iconLink.type = 'image/x-icon';
+    iconLink.rel = 'shortcut icon';
+    iconLink.href = '/favicon.ico?v=' + Date.now();
+    if (!iconLink.parentNode) {
+      document.head.appendChild(iconLink);
+    }
+
     return notificationService.startReminderScheduler();
   }, []);
 
