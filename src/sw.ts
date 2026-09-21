@@ -112,3 +112,11 @@ self.addEventListener('notificationclick', (event: NotificationEvent) => {
     })
   );
 });
+
+// Handle update skip waiting prompt from client UI
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    console.log('[ServiceWorker] SKIP_WAITING signal received, activating new version immediately...');
+    self.skipWaiting();
+  }
+});

@@ -5,6 +5,7 @@ import { MobileNav } from './MobileNav';
 import { useDarkMode } from '../../hooks/useDarkMode';
 import { InstallPWA } from '../ui/InstallPWA';
 import { AdhkarPromptModal } from '../ui/AdhkarPromptModal';
+import { UpdatePromptModal } from '../ui/UpdatePromptModal';
 import { useAdhan } from '../../context/AdhanContext';
 import { notificationService } from '../../services/notificationService';
 
@@ -37,6 +38,7 @@ export const Layout: React.FC = () => {
       <MobileNav />
       <InstallPWA />
       <AdhkarPromptModal />
+      <UpdatePromptModal />
 
       {/* Audio Unlock Banner after Page Reload */}
       {adhanEnabled && !audioUnlocked && (

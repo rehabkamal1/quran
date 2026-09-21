@@ -4,13 +4,14 @@ import { Button } from '../components/ui/Button';
 import { 
   Moon, Sun, Headphones, Globe, Trash2, Heart, ChevronLeft, BellRing, 
   Volume2, Smartphone, Download, Share2, MapPin, Compass, Check, AlertTriangle, 
-  BookOpen, Type, ShieldCheck, X, ArrowDownToLine
+  BookOpen, Type, ShieldCheck, X, ArrowDownToLine, RefreshCw
 } from 'lucide-react';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { audioService, RECITERS } from '../services/audioService';
 import { notificationService } from '../services/notificationService';
 import { backgroundNotificationService } from '../services/backgroundNotificationService';
 import { nativeNotificationService } from '../services/nativeNotificationService';
+import { updateService } from '../services/updateService';
 import { useAdhan } from '../context/AdhanContext';
 import { useNavigate } from 'react-router-dom';
 import { storage } from '../services/storage';
@@ -82,6 +83,7 @@ export const Settings: React.FC = () => {
   const [showApkGuideModal, setShowApkGuideModal] = useState(false);
   const [showResetConfirmModal, setShowResetConfirmModal] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
 
   const isNative = nativeNotificationService.isNative();
 
@@ -246,6 +248,34 @@ export const Settings: React.FC = () => {
 
     navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`);
     showToast('تم نسخ رابط التطبيق للمشاركة 📋');
+  };
+
+  const handleCheckForUpdates = async () => {
+    setCheckingUpdate(true);
+    try {
+      if ('serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg) {
+          await reg.update();
+        }
+      }
+
+      const res = await updateService.checkForRemoteUpdate();
+      if (res.hasUpdate && res.info) {
+        showToast(`يتوفر تحديث جديد (${res.info.version})! 🚀`);
+        if (isNative) {
+          setShowApkGuideModal(true);
+        } else {
+          window.location.reload();
+        }
+      } else {
+        showToast('أنت تستخدم أحدث إصدار من منصة هداية بالفعل! ✓');
+      }
+    } catch {
+      showToast('أنت تستخدم أحدث إصدار من منصة هداية بالفعل! ✓');
+    } finally {
+      setCheckingUpdate(false);
+    }
   };
 
   const handleExportData = () => {
@@ -806,6 +836,34 @@ export const Settings: React.FC = () => {
               </div>
             </div>
             <ChevronLeft size={18} className="text-text-muted" />
+          </div>
+
+          {/* Check for updates row */}
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                <RefreshCw size={18} className={checkingUpdate ? 'animate-spin' : ''} />
+              </div>
+              <div>
+                <div className="font-bold text-sm flex items-center gap-2">
+                  <span>إصدار التطبيق والتحديثات</span>
+                  <span className="text-[10px] bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-bold px-2 py-0.5 rounded-full font-mono">
+                    v{updateService.getCurrentVersion()}
+                  </span>
+                </div>
+                <div className="text-xs text-text-muted">فحص التحديثات الجديدة للسيرفر وملف الـ APK</div>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={checkingUpdate}
+              className="text-xs font-bold border-primary/30 gap-1.5"
+              onClick={handleCheckForUpdates}
+            >
+              <RefreshCw size={14} className={checkingUpdate ? 'animate-spin' : ''} />
+              <span>{checkingUpdate ? 'جاري الفحص...' : 'فحص التحديثات'}</span>
+            </Button>
           </div>
         </Card>
       </section>
