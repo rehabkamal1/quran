@@ -537,25 +537,36 @@ export const Settings: React.FC = () => {
           </div>
 
           {/* Muezzin Voice Select & Test */}
-          <div className="border-t border-black/5 dark:border-white/5 pt-3 space-y-2">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div className="text-xs font-bold text-text-muted">صوت المؤذن المفضل:</div>
+          <div className="border-t border-black/5 dark:border-white/5 pt-3.5 space-y-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="text-xs sm:text-sm font-bold text-text-main dark:text-text-darkMain">صوت المؤذن المفضل:</div>
+                <div className="text-[11px] text-text-muted dark:text-text-darkMuted">اختر صوت الأذان المعتمد لمواقيت الصلوات</div>
+              </div>
               <div className="flex items-center gap-2">
                 <select
                   value={selectedMuezzin}
                   onChange={(e) => handleMuezzinChange(e.target.value)}
-                  className="bg-black/5 dark:bg-white/10 border-0 rounded-xl p-2 text-xs font-bold outline-none cursor-pointer"
+                  className="bg-white dark:bg-[#25282F] text-text-main dark:text-white border border-black/10 dark:border-white/10 rounded-xl p-2.5 text-xs font-bold outline-none cursor-pointer shadow-sm hover:border-primary/50 transition-colors max-w-[210px] sm:max-w-none"
                 >
                   {MUEZZINS.map((m) => (
-                    <option key={m.id} value={m.id}>
+                    <option 
+                      key={m.id} 
+                      value={m.id}
+                      className="bg-white text-zinc-900 dark:bg-[#1E232A] dark:text-zinc-100"
+                    >
                       {m.name}
                     </option>
                   ))}
                 </select>
                 <Button
                   size="sm"
-                  variant="outline"
-                  className={`text-xs gap-1 py-1.5 ${testAudioPlaying ? 'bg-primary text-white border-primary' : 'border-primary/40'}`}
+                  variant={testAudioPlaying ? "primary" : "outline"}
+                  className={`text-xs gap-1 py-2 px-3 shrink-0 ${
+                    testAudioPlaying 
+                      ? 'bg-primary text-white border-primary shadow-sm animate-pulse' 
+                      : 'border-primary/40 dark:border-primary-light/40 dark:text-primary-light hover:bg-primary/10'
+                  }`}
                   onClick={handleTestMuezzinVoice}
                 >
                   {testAudioPlaying ? 'إيقاف ⏹️' : 'تجربة 🎧'}
@@ -566,7 +577,7 @@ export const Settings: React.FC = () => {
 
           {/* Individual Prayer Toggles */}
           <div className="border-t border-black/5 dark:border-white/5 pt-3">
-            <div className="text-xs font-bold text-text-muted mb-2">تخصيص الأذان لكل صلاة:</div>
+            <div className="text-xs font-bold text-text-muted dark:text-text-darkMuted mb-2">تخصيص الأذان لكل صلاة:</div>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
               {[
                 { key: 'fajr', label: 'الفجر' },
@@ -584,7 +595,7 @@ export const Settings: React.FC = () => {
                     className={`py-2 px-2 rounded-xl text-xs font-bold transition-all border text-center cursor-pointer ${
                       isSelected
                         ? 'bg-primary/10 border-primary/40 text-primary dark:text-primary-light shadow-sm'
-                        : 'bg-black/5 dark:bg-white/5 border-transparent text-text-muted opacity-60'
+                        : 'bg-black/5 dark:bg-white/5 border-transparent text-text-muted dark:text-text-darkMuted opacity-60 hover:opacity-100'
                     }`}
                   >
                     <div>{label}</div>

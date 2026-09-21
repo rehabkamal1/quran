@@ -30,6 +30,10 @@
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-primary/40;
   }
+
+  select option {
+    @apply bg-card text-text-main dark:bg-[#1E232A] dark:text-[#E0E0E0];
+  }
 }
 
 @layer components {
