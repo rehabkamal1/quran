@@ -12,6 +12,7 @@ import { quranApi } from '../services/quranApi';
 import { prayerApi } from '../services/prayerApi';
 import type { PrayerTimes } from '../services/prayerApi';
 import { notificationService } from '../services/notificationService';
+import { findCity } from '../data/cities';
 
 const DAILY_DHIKRS = [
   "أَسْتَغْفِرُ اللَّهَ وَأَتُوبُ إِلَيْهِ",
@@ -97,24 +98,19 @@ export const Home: React.FC = () => {
     const fetchTimings = async () => {
       try {
         const useLocation = localStorage.getItem('prayer_use_location') !== 'false';
-        const selectedCity = localStorage.getItem('prayer_selected_city') || 'Makkah';
-        const cityCountry: Record<string, string> = {
-          Makkah: 'SA',
-          Madinah: 'SA',
-          Cairo: 'EG',
-          Dubai: 'AE',
-          Amman: 'JO',
-          Riyadh: 'SA',
-        };
+        const selectedCity = localStorage.getItem('prayer_selected_city') || 'Cairo';
+        const cityInfo = findCity(selectedCity);
+        const calcMethod = localStorage.getItem('prayer_calc_method') || 'egypt';
+        const asrMethod = localStorage.getItem('prayer_asr_juristic') || 'standard';
 
         const cachedLat = localStorage.getItem('prayer_lat');
         const cachedLng = localStorage.getItem('prayer_lng');
 
         let timings: PrayerTimes | null = null;
         if (useLocation && cachedLat && cachedLng) {
-          timings = await prayerApi.getTimingsByCoordinates(Number(cachedLat), Number(cachedLng));
+          timings = await prayerApi.getTimingsByCoordinates(Number(cachedLat), Number(cachedLng), calcMethod, asrMethod);
         } else {
-          timings = await prayerApi.getTimingsByCity(selectedCity, cityCountry[selectedCity] || 'SA');
+          timings = await prayerApi.getTimingsByCity(cityInfo.id, cityInfo.countryCode, calcMethod, asrMethod);
         }
         setPrayerTimings(timings);
       } catch (error) {

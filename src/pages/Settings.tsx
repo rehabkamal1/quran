@@ -14,30 +14,16 @@ import { nativeNotificationService } from '../services/nativeNotificationService
 import { useAdhan } from '../context/AdhanContext';
 import { useNavigate } from 'react-router-dom';
 import { storage } from '../services/storage';
-
-const CITIES = [
-  { id: 'Makkah', name: 'مكة المكرمة', country: 'السعودية' },
-  { id: 'Madinah', name: 'المدينة المنورة', country: 'السعودية' },
-  { id: 'Riyadh', name: 'الرياض', country: 'السعودية' },
-  { id: 'Cairo', name: 'القاهرة', country: 'مصر' },
-  { id: 'Alexandria', name: 'الإسكندرية', country: 'مصر' },
-  { id: 'Giza', name: 'الجيزة', country: 'مصر' },
-  { id: 'Dubai', name: 'دبي', country: 'الإمارات' },
-  { id: 'AbuDhabi', name: 'أبو ظبي', country: 'الإمارات' },
-  { id: 'Amman', name: 'عمان', country: 'الأردن' },
-  { id: 'Jerusalem', name: 'القدس الشريف', country: 'فلسطين' },
-  { id: 'Beirut', name: 'بيروت', country: 'لبنان' },
-  { id: 'Kuwait', name: 'الكويت', country: 'الكويت' },
-  { id: 'Doha', name: 'الدوحة', country: 'قطر' },
-  { id: 'Istanbul', name: 'إسطنبول', country: 'تركيا' },
-];
+import { CITIES } from '../data/cities';
 
 const CALC_METHODS = [
-  { id: 'egypt', name: 'الهيئة المصرية العامة للمساحة' },
+  { id: 'egypt', name: 'الهيئة المصرية العامة للمساحة (الفجر 19.5° - العشاء 17.5°)' },
   { id: 'makkah', name: 'جامعة أم القرى - مكة المكرمة' },
   { id: 'mwl', name: 'رابطة العالم الإسلامي' },
   { id: 'uae', name: 'الهيئة العامة للشؤون الإسلامية (الإمارات)' },
   { id: 'isna', name: 'الجمعية الإسلامية لأمريكا الشمالية (ISNA)' },
+  { id: 'kuwait', name: 'الكويت' },
+  { id: 'qatar', name: 'قطر' },
 ];
 
 const MUEZZINS = [
@@ -66,7 +52,7 @@ export const Settings: React.FC = () => {
   
   // Prayer & Location settings
   const [useLocation, setUseLocation] = useState(() => localStorage.getItem('prayer_use_location') !== 'false');
-  const [selectedCity, setSelectedCity] = useState(() => localStorage.getItem('prayer_selected_city') || 'Makkah');
+  const [selectedCity, setSelectedCity] = useState(() => localStorage.getItem('prayer_selected_city') || 'Cairo');
   const [calcMethod, setCalcMethod] = useState(() => localStorage.getItem('prayer_calc_method') || 'egypt');
   const [asrMethod, setAsrMethod] = useState(() => localStorage.getItem('prayer_asr_juristic') || 'standard');
   
@@ -451,6 +437,12 @@ export const Settings: React.FC = () => {
               ))}
             </select>
           </div>
+          {calcMethod === 'egypt' && (
+            <div className="bg-emerald-500/5 px-4 py-2 border-t border-emerald-500/10 text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 font-medium">
+              <span>✓</span>
+              <span>متوافق تماماً مع توقيتات الهيئة العامة المصرية للمساحة ودار الإفتاء المصرية (الفجر: 19.5°، العشاء: 17.5°).</span>
+            </div>
+          )}
 
           {/* Asr Juristic Method */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-2">

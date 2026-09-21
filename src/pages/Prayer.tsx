@@ -7,14 +7,8 @@ import { prayerApi } from '../services/prayerApi';
 import type { PrayerTimes } from '../services/prayerApi';
 import { useAdhan } from '../context/AdhanContext';
 
-const CITIES = [
-  { id: 'Makkah', name: 'مكة المكرمة', country: 'SA' },
-  { id: 'Madinah', name: 'المدينة المنورة', country: 'SA' },
-  { id: 'Cairo', name: 'القاهرة', country: 'EG' },
-  { id: 'Dubai', name: 'دبي', country: 'AE' },
-  { id: 'Amman', name: 'عمان', country: 'JO' },
-  { id: 'Riyadh', name: 'الرياض', country: 'SA' },
-];
+import { CITIES, findCity } from '../data/cities';
+import { CALC_METHODS_CONFIG } from '../services/prayerApi';
 
 const parsePrayerTime = (timeStr: string, date: Date = new Date()): Date => {
   const [hours, minutes] = timeStr.split(':').map(Number);
@@ -30,8 +24,8 @@ export const Prayer: React.FC = () => {
     return localStorage.getItem('prayer_use_location') !== 'false';
   });
   const [selectedCity, setSelectedCity] = useState(() => {
-    const cityId = localStorage.getItem('prayer_selected_city') || 'Makkah';
-    return CITIES.find(c => c.id === cityId) || CITIES[0];
+    const cityId = localStorage.getItem('prayer_selected_city');
+    return findCity(cityId);
   });
 
   const { adhanEnabled, toggleAdhan } = useAdhan();
@@ -40,6 +34,8 @@ export const Prayer: React.FC = () => {
   // Try fetching by location or fallback to city (caching coordinates to avoid prompt on page load)
   const loadTimings = async (forceGeoPrompt = false) => {
     setLoading(true);
+    const calcMethod = localStorage.getItem('prayer_calc_method') || 'egypt';
+    const asrMethod = localStorage.getItem('prayer_asr_juristic') || 'standard';
     
     const cachedLat = localStorage.getItem('prayer_lat');
     const cachedLng = localStorage.getItem('prayer_lng');
@@ -48,7 +44,7 @@ export const Prayer: React.FC = () => {
       // Use cached coordinates to avoid triggering browser geolocation prompt
       const lat = parseFloat(cachedLat);
       const lng = parseFloat(cachedLng);
-      const data = await prayerApi.getTimingsByCoordinates(lat, lng);
+      const data = await prayerApi.getTimingsByCoordinates(lat, lng, calcMethod, asrMethod);
       if (data) setTimings(data);
       setLoading(false);
     } else if ((useLocation || forceGeoPrompt) && navigator.geolocation) {
@@ -58,8 +54,9 @@ export const Prayer: React.FC = () => {
           localStorage.setItem('prayer_use_location', 'true');
           localStorage.setItem('prayer_lat', String(latitude));
           localStorage.setItem('prayer_lng', String(longitude));
+          localStorage.removeItem('prayer_timings_cache');
           setUseLocation(true);
-          const data = await prayerApi.getTimingsByCoordinates(latitude, longitude);
+          const data = await prayerApi.getTimingsByCoordinates(latitude, longitude, calcMethod, asrMethod);
           if (data) setTimings(data);
           setLoading(false);
         },
@@ -69,14 +66,14 @@ export const Prayer: React.FC = () => {
           localStorage.setItem('prayer_use_location', 'false');
           localStorage.removeItem('prayer_lat');
           localStorage.removeItem('prayer_lng');
-          const data = await prayerApi.getTimingsByCity(selectedCity.id, selectedCity.country);
+          const data = await prayerApi.getTimingsByCity(selectedCity.id, selectedCity.countryCode, calcMethod, asrMethod);
           if (data) setTimings(data);
           setLoading(false);
         }
       );
     } else {
       localStorage.setItem('prayer_use_location', 'false');
-      const data = await prayerApi.getTimingsByCity(selectedCity.id, selectedCity.country);
+      const data = await prayerApi.getTimingsByCity(selectedCity.id, selectedCity.countryCode, calcMethod, asrMethod);
       if (data) setTimings(data);
       setLoading(false);
     }
@@ -161,12 +158,13 @@ export const Prayer: React.FC = () => {
   }, [timings]);
 
   const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const city = CITIES.find(c => c.id === e.target.value);
+    const city = findCity(e.target.value);
     if (city) {
       setSelectedCity(city);
       setUseLocation(false);
       localStorage.setItem('prayer_use_location', 'false');
       localStorage.setItem('prayer_selected_city', city.id);
+      localStorage.removeItem('prayer_timings_cache');
     }
   };
 
@@ -232,9 +230,20 @@ export const Prayer: React.FC = () => {
           onChange={handleCityChange}
         >
           {CITIES.map(c => (
-            <option key={c.id} value={c.id}>{c.name}</option>
+            <option key={c.id} value={c.id}>{c.name} - {c.country}</option>
           ))}
         </select>
+      </div>
+
+      {/* Calculation Method Compliance Badge */}
+      <div className="flex flex-wrap items-center justify-between text-xs text-text-muted bg-primary/5 dark:bg-primary-light/5 border border-primary/20 rounded-xl px-4 py-2.5 gap-2">
+        <div className="flex items-center gap-2 font-medium text-primary dark:text-primary-light">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+          <span>طريقة الحساب: {CALC_METHODS_CONFIG[localStorage.getItem('prayer_calc_method') || 'egypt']?.name || 'الهيئة المصرية العامة للمساحة'}</span>
+        </div>
+        <span className="text-text-muted">
+          {CALC_METHODS_CONFIG[localStorage.getItem('prayer_calc_method') || 'egypt']?.description || 'زاوية الفجر 19.5°، زاوية العشاء 17.5°'}
+        </span>
       </div>
 
       {/* Adhan Toggle Control Card */}

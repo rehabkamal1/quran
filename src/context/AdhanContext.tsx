@@ -23,14 +23,7 @@ interface AdhanContextType {
 
 const AdhanContext = createContext<AdhanContextType | undefined>(undefined);
 
-const CITIES = [
-  { id: 'Makkah', name: 'مكة المكرمة', country: 'SA' },
-  { id: 'Madinah', name: 'المدينة المنورة', country: 'SA' },
-  { id: 'Cairo', name: 'القاهرة', country: 'EG' },
-  { id: 'Dubai', name: 'دبي', country: 'AE' },
-  { id: 'Amman', name: 'عمان', country: 'JO' },
-  { id: 'Riyadh', name: 'الرياض', country: 'SA' },
-];
+import { findCity } from '../data/cities';
 
 export const parsePrayerMinutes = (timeStr: string): number | null => {
   if (!timeStr || typeof timeStr !== 'string') return null;
@@ -290,8 +283,8 @@ export const AdhanProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (nativeNotificationService.isNative()) {
         const granted = await nativeNotificationService.requestPermission();
         if (granted && timingsRef.current) {
-          const cityId = localStorage.getItem('prayer_selected_city') || 'Makkah';
-          const city = CITIES.find(c => c.id === cityId) || CITIES[0];
+          const cityId = localStorage.getItem('prayer_selected_city') || 'Cairo';
+          const city = findCity(cityId);
           await nativeNotificationService.schedulePrayers(timingsRef.current, city.name);
         }
       } else {
@@ -342,8 +335,10 @@ export const AdhanProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (!enabled) return;
 
       const useLocation = localStorage.getItem('prayer_use_location') !== 'false';
-      const cityId = localStorage.getItem('prayer_selected_city') || 'Makkah';
-      const city = CITIES.find(c => c.id === cityId) || CITIES[0];
+      const cityId = localStorage.getItem('prayer_selected_city') || 'Cairo';
+      const city = findCity(cityId);
+      const calcMethod = localStorage.getItem('prayer_calc_method') || 'egypt';
+      const asrMethod = localStorage.getItem('prayer_asr_juristic') || 'standard';
 
       const now = new Date();
       const todayStr = formatPrayerKey(now, '').replace(':', '');
@@ -358,17 +353,24 @@ export const AdhanProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
         if (cacheStr) {
           const cache = JSON.parse(cacheStr);
-          if (cache.date === todayStr && cache.useLocation === useLocation && (useLocation ? cache.latLng === latLngStr : cache.cityId === city.id) && cache.timings) {
+          if (
+            cache.date === todayStr &&
+            cache.useLocation === useLocation &&
+            cache.calcMethod === calcMethod &&
+            cache.asrMethod === asrMethod &&
+            (useLocation ? cache.latLng === latLngStr : cache.cityId === city.id) &&
+            cache.timings
+          ) {
             timings = cache.timings;
           }
         }
 
         if (!timings) {
-          console.log(`[Adhan] 📍 Fetching fresh prayer timings for ${city.name}...`);
+          console.log(`[Adhan] 📍 Fetching fresh prayer timings for ${city.name} (${calcMethod} - Egyptian Survey)...`);
           if (useLocation && cachedLat && cachedLng) {
-            timings = await prayerApi.getTimingsByCoordinates(Number(cachedLat), Number(cachedLng));
+            timings = await prayerApi.getTimingsByCoordinates(Number(cachedLat), Number(cachedLng), calcMethod, asrMethod);
           } else {
-            timings = await prayerApi.getTimingsByCity(city.id, city.country);
+            timings = await prayerApi.getTimingsByCity(city.id, city.countryCode, calcMethod, asrMethod);
           }
 
           if (timings) {
@@ -377,6 +379,8 @@ export const AdhanProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               useLocation,
               latLng: latLngStr,
               cityId: city.id,
+              calcMethod,
+              asrMethod,
               timings
             }));
           }
