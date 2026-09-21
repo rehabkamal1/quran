@@ -5,6 +5,9 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-apk:
     runs-on: ubuntu-latest
@@ -19,9 +22,6 @@ jobs:
           distribution: 'zulu'
           java-version: '21'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -29,7 +29,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci || npm install
 
       - name: Build Web Assets (Vite)
         run: npm run build
@@ -37,11 +37,18 @@ jobs:
       - name: Sync Capacitor Android
         run: npx cap sync android
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Accept Android SDK Licenses
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
+
       - name: Build Debug APK via Gradle
         run: |
           cd android
           chmod +x ./gradlew
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
@@ -49,3 +56,18 @@ jobs:
           name: hedayah-quran-app-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
+
+      - name: Publish to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        continue-on-error: true
+        with:
+          tag_name: apk-latest
+          name: "Hedayah Quran Android APK (أحدث إصدار)"
+          body: |
+            🕌 تطبيق هداية للقرآن الكريم (أندرويد APK):
+            - مواقيت الصلاة متوافقة بنسبة 100% مع الهيئة المصرية العامة للمساحة ودار الإفتاء.
+            - منبهات وإشعارات الأذان تعمل في الخلفية حتى مع إغلاق التطبيق.
+            - تلاوات وقراء متعددون وتحكم كامل في حجم خط المصحف.
+          files: android/app/build/outputs/apk/debug/app-debug.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

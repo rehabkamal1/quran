@@ -917,18 +917,19 @@ export const Settings: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-3 pt-2">
-              <Button
-                variant="primary"
-                className="flex-1 py-3 text-xs font-bold gap-2"
-                onClick={handleShareApp}
+            <div className="flex flex-col sm:flex-row items-center gap-2.5 pt-2">
+              <a
+                href="https://github.com/rehabkamal1/quran/actions"
+                target="_blank"
+                rel="noreferrer"
+                className="w-full sm:flex-1 py-3 px-4 rounded-xl bg-primary hover:bg-primary-dark text-white text-xs font-bold flex items-center justify-center gap-2 shadow-md transition-all text-center cursor-pointer"
               >
-                <Share2 size={16} />
-                <span>مشاركة رابط التطبيق</span>
-              </Button>
+                <Download size={16} />
+                <span>صفحة تنزيل الـ APK من GitHub</span>
+              </a>
               <Button
                 variant="outline"
-                className="py-3 text-xs font-bold"
+                className="w-full sm:w-auto py-3 text-xs font-bold"
                 onClick={() => setShowApkGuideModal(false)}
               >
                 إغلاق

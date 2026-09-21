@@ -59,3 +59,4 @@ export function findCity(idOrName?: string | null): CityInfo {
   const found = CITIES.find(c => c.id.toLowerCase() === idOrName.toLowerCase() || c.name === idOrName);
   return found || DEFAULT_CITY;
 }
+
