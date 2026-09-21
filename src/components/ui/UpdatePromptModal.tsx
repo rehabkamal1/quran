@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, RefreshCw, Download, X } from 'lucide-react';
+import { Sparkles, RefreshCw, Download, X, CheckCircle2 } from 'lucide-react';
 import { Button } from './Button';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { updateService } from '../../services/updateService';
 import type { AppVersionInfo } from '../../services/updateService';
 
 export const UpdatePromptModal: React.FC = () => {
-  const [remoteApkUpdate, setRemoteApkUpdate] = useState<AppVersionInfo | null>(null);
+  const [remoteUpdateInfo, setRemoteUpdateInfo] = useState<AppVersionInfo | null>(null);
+  const [isTestPrompt, setIsTestPrompt] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
   // Vite PWA Service Worker Hook
@@ -17,13 +18,13 @@ export const UpdatePromptModal: React.FC = () => {
   } = useRegisterSW({
     onRegisteredSW(_swUrl, registration) {
       if (registration) {
-        // Immediate check on app mount
+        // Immediate check on app launch
         registration.update().catch(err => console.warn('[PWA] Immediate update check failed:', err));
 
-        // Periodic check every 20 minutes
+        // Periodic check every 15 minutes
         const interval = setInterval(() => {
           registration.update().catch(err => console.warn('[PWA] Periodic update check failed:', err));
-        }, 20 * 60 * 1000);
+        }, 15 * 60 * 1000);
 
         // Check whenever the user refocuses the app/tab
         const onVisibilityChange = () => {
@@ -46,14 +47,21 @@ export const UpdatePromptModal: React.FC = () => {
     }
   });
 
-  // Check for remote APK version update (for native APK users or web users wanting the APK)
+  // Listen for custom test event triggered from Settings
   useEffect(() => {
-    const checkApk = async () => {
+    const handleTestOpen = () => setIsTestPrompt(true);
+    window.addEventListener('open-update-modal', handleTestOpen);
+    return () => window.removeEventListener('open-update-modal', handleTestOpen);
+  }, []);
+
+  // Check for remote version update (works in all browsers and APK)
+  useEffect(() => {
+    const checkVersion = async () => {
       try {
         const result = await updateService.checkForRemoteUpdate();
         if (result.hasUpdate && result.info) {
           if (!updateService.isUpdateDismissed(result.info.version)) {
-            setRemoteApkUpdate(result.info);
+            setRemoteUpdateInfo(result.info);
           }
         }
       } catch (err) {
@@ -61,63 +69,72 @@ export const UpdatePromptModal: React.FC = () => {
       }
     };
 
-    checkApk();
+    checkVersion();
   }, []);
+
+  const isNative = updateService.isNativeApp();
 
   const handleApplyWebUpdate = async () => {
     setIsUpdating(true);
     try {
-      await updateServiceWorker(true);
+      if (needRefresh) {
+        await updateServiceWorker(true);
+      }
+      // Clean caches to guarantee fresh bundle
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+      }
+      window.location.reload();
     } catch (err) {
       console.error('[PWA] Failed to update service worker:', err);
       window.location.reload();
     }
   };
 
-  const handleDismissWebUpdate = () => {
-    setNeedRefresh(false);
-  };
-
   const handleDownloadApk = () => {
-    if (remoteApkUpdate) {
-      window.open(remoteApkUpdate.apkDownloadUrl, '_blank');
-      setRemoteApkUpdate(null);
-    }
+    const downloadUrl = remoteUpdateInfo?.apkDownloadUrl || 'https://github.com/rehabkamal1/quran/releases/tag/apk-latest';
+    window.open(downloadUrl, '_blank');
+    setRemoteUpdateInfo(null);
+    setIsTestPrompt(false);
   };
 
-  const handleDismissApk = () => {
-    if (remoteApkUpdate) {
-      updateService.dismissUpdate(remoteApkUpdate.version);
-      setRemoteApkUpdate(null);
+  const handleDismiss = () => {
+    if (remoteUpdateInfo) {
+      updateService.dismissUpdate(remoteUpdateInfo.version);
     }
+    setNeedRefresh(false);
+    setRemoteUpdateInfo(null);
+    setIsTestPrompt(false);
   };
 
-  // Determine which update modal to show (PWA web update has priority)
-  const showWebModal = needRefresh;
-  const showApkModal = !needRefresh && Boolean(remoteApkUpdate);
+  const isOpen = needRefresh || Boolean(remoteUpdateInfo) || isTestPrompt;
 
-  if (!showWebModal && !showApkModal) {
+  if (!isOpen) {
     return null;
   }
 
+  const newVersionStr = remoteUpdateInfo?.version || (isTestPrompt ? '1.0.2' : 'الجديدة');
+  const releaseNotes = remoteUpdateInfo?.notes || (isTestPrompt ? 'تحديث مواقيت الصلاة لتتوافق 100% مع الهيئة المصرية العامة للمساحة، ميزة البحث في إذاعات القرآن الكريم، وتفعيل التنبيهات وسجل المواظبة.' : '');
+
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+      <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/65 backdrop-blur-md animate-in fade-in duration-300">
         <motion.div
           initial={{ opacity: 0, scale: 0.9, y: 25 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 25 }}
           transition={{ type: 'spring', stiffness: 350, damping: 26 }}
-          className="relative w-full max-w-md bg-white dark:bg-card-dark rounded-3xl p-6 md:p-8 shadow-2xl border border-primary/20 text-center space-y-6 overflow-hidden"
+          className="relative w-full max-w-md bg-white dark:bg-[#1A2228] rounded-3xl p-6 md:p-8 shadow-2xl border border-primary/30 text-center space-y-6 overflow-hidden"
           dir="rtl"
         >
           {/* Background Ambient Glow */}
-          <div className="absolute -top-12 -right-12 w-36 h-36 bg-primary/10 rounded-full blur-2xl pointer-events-none" />
-          <div className="absolute -bottom-12 -left-12 w-36 h-36 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
+          <div className="absolute -top-12 -right-12 w-36 h-36 bg-primary/15 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-12 -left-12 w-36 h-36 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
 
           {/* Close / Dismiss Button */}
           <button
-            onClick={showWebModal ? handleDismissWebUpdate : handleDismissApk}
+            onClick={handleDismiss}
             className="absolute top-4 left-4 p-2 text-text-muted hover:text-text-main dark:hover:text-white transition-colors rounded-full hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
             title="إغلاق والتذكير لاحقاً"
           >
@@ -133,28 +150,47 @@ export const UpdatePromptModal: React.FC = () => {
           </div>
 
           {/* Text Content */}
-          <div className="space-y-2">
+          <div className="space-y-2.5">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/25 text-xs font-bold text-primary dark:text-primary-light">
+              <CheckCircle2 size={14} />
+              <span>إصدار جديد متوفر ({newVersionStr})</span>
+            </div>
+
             <h3 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
-              {showWebModal ? 'تحديث جديد متوفر للتطبيق 🚀' : 'تحديث جديد متوفر للتطبيق (APK) 📱'}
+              {isNative ? 'تحديث جديد لتطبيق أندرويد 📱' : 'تحديث جديد متوفر للمنصة 🚀'}
             </h3>
+
             <p className="text-sm text-text-muted dark:text-text-darkMuted leading-relaxed">
-              {showWebModal
-                ? 'تم إصدار نسخة أحدث ومحدثة من منصة هداية تحتوي على تحسينات جديدة وإصلاحات هامة. هل ترغب في التحديث الآن؟'
-                : `يتوفر إصدار جديد من تطبيق هداية (الإصدار ${remoteApkUpdate?.version}). يتضمن تحسينات لمواقيت الصلاة ومنبهات الأذان.`}
+              تم إصدار نسخة أحدث ومحدثة من منصة وتطبيق هداية تحتوي على تحسينات هامة وميزات جديدة. هل ترغب في التحديث الآن؟
             </p>
 
-            {/* Release notes badge if APK update */}
-            {showApkModal && remoteApkUpdate?.notes && (
-              <div className="p-3 bg-primary/5 dark:bg-primary/10 rounded-2xl border border-primary/20 text-xs text-right space-y-1">
-                <span className="font-bold text-primary dark:text-primary-light block">✨ ما الجديد في هذا الإصدار:</span>
-                <span className="text-gray-700 dark:text-gray-300 block">{remoteApkUpdate.notes}</span>
+            {/* Release notes badge */}
+            {releaseNotes && (
+              <div className="p-3 bg-primary/5 dark:bg-primary/10 rounded-2xl border border-primary/20 text-xs text-right space-y-1 mt-2">
+                <span className="font-bold text-primary dark:text-primary-light block">✨ ما الجديد في هذا التحديث:</span>
+                <span className="text-gray-700 dark:text-gray-300 block leading-relaxed">{releaseNotes}</span>
               </div>
+            )}
+
+            {isTestPrompt && (
+              <p className="text-[11px] text-amber-600 dark:text-amber-400 bg-amber-500/10 py-1 px-2.5 rounded-lg font-bold">
+                ⚠️ هذه نافذة معاينة تجريبية لاختبار مظهر وتفاعل نظام التحديثات.
+              </p>
             )}
           </div>
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
-            {showWebModal ? (
+            {isNative ? (
+              <Button
+                variant="primary"
+                className="w-full py-3.5 text-sm font-bold shadow-lg shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer bg-primary hover:bg-primary-dark text-white"
+                onClick={handleDownloadApk}
+              >
+                <Download size={18} />
+                <span>تحميل التحديث (APK) 📥</span>
+              </Button>
+            ) : (
               <Button
                 variant="primary"
                 disabled={isUpdating}
@@ -164,21 +200,12 @@ export const UpdatePromptModal: React.FC = () => {
                 <RefreshCw size={18} className={isUpdating ? 'animate-spin' : ''} />
                 <span>{isUpdating ? 'جاري تطبيق التحديث...' : 'تحديث الآن ✨'}</span>
               </Button>
-            ) : (
-              <Button
-                variant="primary"
-                className="w-full py-3.5 text-sm font-bold shadow-lg shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer bg-primary hover:bg-primary-dark text-white"
-                onClick={handleDownloadApk}
-              >
-                <Download size={18} />
-                <span>تحميل التحديث (APK) 📥</span>
-              </Button>
             )}
 
             <Button
               variant="secondary"
-              className="w-full sm:w-auto py-3.5 px-5 text-sm font-bold hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
-              onClick={showWebModal ? handleDismissWebUpdate : handleDismissApk}
+              className="w-full sm:w-auto py-3.5 px-6 text-sm font-bold hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
+              onClick={handleDismiss}
             >
               لاحقاً
             </Button>

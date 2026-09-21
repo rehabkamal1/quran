@@ -262,17 +262,13 @@ export const Settings: React.FC = () => {
 
       const res = await updateService.checkForRemoteUpdate();
       if (res.hasUpdate && res.info) {
-        showToast(`يتوفر تحديث جديد (${res.info.version})! 🚀`);
-        if (isNative) {
-          setShowApkGuideModal(true);
-        } else {
-          window.location.reload();
-        }
+        window.dispatchEvent(new CustomEvent('open-update-modal'));
+        showToast(`تم اكتشاف إصدار جديد (${res.info.version})! 🚀`);
       } else {
-        showToast('أنت تستخدم أحدث إصدار من منصة هداية بالفعل! ✓');
+        showToast(`أنت تستخدم أحدث إصدار من منصة هداية بالفعل! ✓ (v${updateService.getCurrentVersion()})`);
       }
     } catch {
-      showToast('أنت تستخدم أحدث إصدار من منصة هداية بالفعل! ✓');
+      showToast(`أنت تستخدم أحدث إصدار من منصة هداية بالفعل! ✓ (v${updateService.getCurrentVersion()})`);
     } finally {
       setCheckingUpdate(false);
     }
@@ -854,16 +850,27 @@ export const Settings: React.FC = () => {
                 <div className="text-xs text-text-muted">فحص التحديثات الجديدة للسيرفر وملف الـ APK</div>
               </div>
             </div>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={checkingUpdate}
-              className="text-xs font-bold border-primary/30 gap-1.5"
-              onClick={handleCheckForUpdates}
-            >
-              <RefreshCw size={14} className={checkingUpdate ? 'animate-spin' : ''} />
-              <span>{checkingUpdate ? 'جاري الفحص...' : 'فحص التحديثات'}</span>
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={checkingUpdate}
+                className="text-xs font-bold border-primary/30 gap-1.5"
+                onClick={handleCheckForUpdates}
+              >
+                <RefreshCw size={14} className={checkingUpdate ? 'animate-spin' : ''} />
+                <span>{checkingUpdate ? 'جاري الفحص...' : 'فحص التحديثات'}</span>
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="text-xs font-bold gap-1 text-primary dark:text-primary-light"
+                onClick={() => window.dispatchEvent(new CustomEvent('open-update-modal'))}
+                title="معاينة نافذة التنبيه بالتحديث"
+              >
+                <span>تجربة النافذة 🧪</span>
+              </Button>
+            </div>
           </div>
         </Card>
       </section>
