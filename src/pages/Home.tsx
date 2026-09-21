@@ -77,6 +77,39 @@ export const Home: React.FC = () => {
   const [showRamadanModal, setShowRamadanModal] = useState(false);
   const [ramadanCountdown, setRamadanCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
+  // Interactive Daily Habits & Streak State
+  interface DailyHabitsState {
+    streakDays: number;
+    quranCompleted: boolean;
+    morningAdhkarCompleted: boolean;
+    eveningAdhkarCompleted: boolean;
+    worshipMinutes: number;
+    completedDays: boolean[];
+  }
+
+  const [habits, setHabits] = useState<DailyHabitsState>(() => {
+    try {
+      const saved = localStorage.getItem('hedayah_daily_habits');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return {
+      streakDays: 14,
+      quranCompleted: true,
+      morningAdhkarCompleted: true,
+      eveningAdhkarCompleted: false,
+      worshipMinutes: 45,
+      completedDays: [true, true, true, true, true, true, true, true, true, true, true, true, true, true]
+    };
+  });
+
+  const updateHabits = (updater: (prev: DailyHabitsState) => DailyHabitsState) => {
+    setHabits(prev => {
+      const next = updater(prev);
+      localStorage.setItem('hedayah_daily_habits', JSON.stringify(next));
+      return next;
+    });
+  };
+
   // 1-second continuous live clock tick
   useEffect(() => {
     const timer = setInterval(() => {
@@ -324,14 +357,14 @@ export const Home: React.FC = () => {
           onClick={() => setShowStreakModal(true)}
         >
           <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
-            <span className="font-bold text-xl">14</span>
+            <span className="font-bold text-xl">{habits.streakDays}</span>
           </div>
           <div>
             <h3 className="font-bold flex items-center gap-1">
-              <span>يومي</span>
+              <span>سجل المواظبة</span>
               <ChevronLeft size={14} className="text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
             </h3>
-            <p className="text-xs text-text-muted">مواظبة 14 يوم</p>
+            <p className="text-xs text-text-muted">مواظبة {habits.streakDays} يوم (اضغط للتعديل)</p>
           </div>
         </Card>
 
@@ -663,10 +696,10 @@ export const Home: React.FC = () => {
         </div>
       </Card>
 
-      {/* Streak Modal (مواظبة 14 يوم) */}
+      {/* Streak Modal (مواظبة تفاعلية قابلة للتعديل) */}
       {showStreakModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setShowStreakModal(false)}>
-          <div className="bg-white dark:bg-card-dark rounded-3xl max-w-md w-full p-6 space-y-6 shadow-2xl border border-primary/20" onClick={(e) => e.stopPropagation()} dir="rtl">
+          <div className="bg-white dark:bg-card-dark rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl border border-primary/20 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()} dir="rtl">
             <div className="flex items-center justify-between border-b pb-4 border-gray-100 dark:border-gray-800">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center font-bold text-xl shadow-lg shadow-emerald-500/30">
@@ -674,50 +707,185 @@ export const Home: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-lg text-gray-900 dark:text-white">سجل المواظبة اليومية</h3>
-                  <p className="text-xs text-text-muted">أنت مواظب منذ 14 يوماً متتالية!</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-xs text-text-muted">أنت مواظب منذ:</span>
+                    <div className="flex items-center gap-1.5 bg-emerald-500/10 dark:bg-emerald-500/20 px-2 py-0.5 rounded-lg">
+                      <button
+                        onClick={() => updateHabits(h => ({ ...h, streakDays: Math.max(0, h.streakDays - 1) }))}
+                        className="w-5 h-5 rounded bg-emerald-500/20 hover:bg-emerald-500 text-emerald-700 hover:text-white dark:text-emerald-400 flex items-center justify-center text-xs font-bold transition-colors cursor-pointer"
+                        title="إنقاص يوم"
+                      >
+                        -
+                      </button>
+                      <span className="text-xs font-black text-emerald-700 dark:text-emerald-400 font-mono">
+                        {habits.streakDays} يوماً
+                      </span>
+                      <button
+                        onClick={() => updateHabits(h => ({ ...h, streakDays: h.streakDays + 1 }))}
+                        className="w-5 h-5 rounded bg-emerald-500/20 hover:bg-emerald-500 text-emerald-700 hover:text-white dark:text-emerald-400 flex items-center justify-center text-xs font-bold transition-colors cursor-pointer"
+                        title="زيادة يوم"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <button onClick={() => setShowStreakModal(false)} className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
+              <button onClick={() => setShowStreakModal(false)} className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer">
                 ✕
               </button>
             </div>
 
-            {/* Streak Grid (Last 14 days) */}
-            <div>
-              <h4 className="text-sm font-bold mb-3 text-gray-700 dark:text-gray-300">أيام المواظبة الـ 14 الأخيرة:</h4>
-              <div className="grid grid-cols-7 gap-2 text-center">
-                {Array.from({ length: 14 }).map((_, i) => (
-                  <div key={i} className="flex flex-col items-center gap-1">
-                    <div className="w-9 h-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-bold text-xs shadow-sm">
-                      ✓
+            {/* Interactive Streak Grid */}
+            <div className="bg-black/[0.02] dark:bg-white/[0.02] p-3.5 rounded-2xl border border-black/5 dark:border-white/5 space-y-2">
+              <div className="flex items-center justify-between text-xs font-bold">
+                <span className="text-gray-700 dark:text-gray-300">أيام المواظبة الـ 14 الأخيرة:</span>
+                <span className="text-[11px] text-emerald-600 dark:text-emerald-400">
+                  {habits.completedDays.filter(Boolean).length} / 14 يوم مكتمل
+                </span>
+              </div>
+              <div className="grid grid-cols-7 gap-2 text-center pt-1">
+                {habits.completedDays.map((isDone, i) => (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      updateHabits(h => {
+                        const updated = [...h.completedDays];
+                        updated[i] = !updated[i];
+                        const count = updated.filter(Boolean).length;
+                        return { ...h, completedDays: updated, streakDays: count };
+                      });
+                    }}
+                    className="flex flex-col items-center gap-1 group cursor-pointer"
+                    title={`يوم ${i + 1}: اضغط للتغيير`}
+                  >
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs transition-all ${
+                      isDone
+                        ? 'bg-emerald-500 text-white shadow-sm ring-2 ring-emerald-400/30 group-hover:scale-110'
+                        : 'bg-black/5 dark:bg-white/10 text-text-muted hover:bg-emerald-500/20 group-hover:scale-105'
+                    }`}>
+                      {isDone ? '✓' : '—'}
                     </div>
                     <span className="text-[10px] text-text-muted">يوم {i + 1}</span>
-                  </div>
+                  </button>
                 ))}
               </div>
+              <p className="text-[10px] text-text-muted text-center pt-1">
+                💡 اضغط على أي يوم لتبديله بين مكتمل وغير مكتمل
+              </p>
             </div>
 
-            {/* Detailed Stats */}
-            <div className="space-y-3 bg-emerald-50 dark:bg-emerald-950/30 p-4 rounded-2xl border border-emerald-500/20">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-300">📖 القراءة اليومية:</span>
-                <span className="font-bold text-emerald-700 dark:text-emerald-400">مكتملة ✨</span>
+            {/* Interactive Habits Toggles */}
+            <div className="space-y-2.5">
+              <h4 className="text-xs font-bold text-text-muted px-1">مهام وإنجازات اليوم (اضغط للتعديل):</h4>
+
+              {/* Quran Daily Reading Toggle */}
+              <div
+                onClick={() => updateHabits(h => ({ ...h, quranCompleted: !h.quranCompleted }))}
+                className={`flex items-center justify-between p-3 rounded-2xl border transition-all cursor-pointer ${
+                  habits.quranCompleted
+                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-300'
+                    : 'bg-black/5 dark:bg-white/5 border-transparent text-text-muted'
+                }`}
+              >
+                <span className="text-xs font-bold flex items-center gap-2">
+                  <span>📖</span>
+                  <span>الورد القرآي لليوم:</span>
+                </span>
+                <span className={`text-xs font-bold px-2.5 py-1 rounded-xl transition-all ${
+                  habits.quranCompleted
+                    ? 'bg-emerald-500 text-white shadow-sm'
+                    : 'bg-black/10 dark:bg-white/10 text-text-muted'
+                }`}>
+                  {habits.quranCompleted ? 'مكتمل ✨' : 'اضغط لتحديده كمكتمل ⏳'}
+                </span>
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-300">📿 أذكار الصباح والمساء:</span>
-                <span className="font-bold text-emerald-700 dark:text-emerald-400">مكتملة ✨</span>
+
+              {/* Morning & Evening Adhkar Toggles */}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => updateHabits(h => ({ ...h, morningAdhkarCompleted: !h.morningAdhkarCompleted }))}
+                  className={`p-3 rounded-2xl border text-xs font-bold flex flex-col items-start gap-1 transition-all cursor-pointer ${
+                    habits.morningAdhkarCompleted
+                      ? 'bg-amber-500/15 border-amber-500/40 text-amber-800 dark:text-amber-300'
+                      : 'bg-black/5 dark:bg-white/5 border-transparent text-text-muted'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <span>☀️ أذكار الصباح</span>
+                    <span className="text-[10px]">{habits.morningAdhkarCompleted ? '✓' : '—'}</span>
+                  </div>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-lg ${habits.morningAdhkarCompleted ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300' : 'text-text-muted'}`}>
+                    {habits.morningAdhkarCompleted ? 'مكتملة ✨' : 'لم تكتمل ⏳'}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => updateHabits(h => ({ ...h, eveningAdhkarCompleted: !h.eveningAdhkarCompleted }))}
+                  className={`p-3 rounded-2xl border text-xs font-bold flex flex-col items-start gap-1 transition-all cursor-pointer ${
+                    habits.eveningAdhkarCompleted
+                      ? 'bg-indigo-500/15 border-indigo-500/40 text-indigo-800 dark:text-indigo-300'
+                      : 'bg-black/5 dark:bg-white/5 border-transparent text-text-muted'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <span>🌙 أذكار المساء</span>
+                    <span className="text-[10px]">{habits.eveningAdhkarCompleted ? '✓' : '—'}</span>
+                  </div>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-lg ${habits.eveningAdhkarCompleted ? 'bg-indigo-500/20 text-indigo-700 dark:text-indigo-300' : 'text-text-muted'}`}>
+                    {habits.eveningAdhkarCompleted ? 'مكتملة ✨' : 'لم تكتمل ⏳'}
+                  </span>
+                </button>
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-300">⏱️ إجمالي دقائق العبادة:</span>
-                <span className="font-bold text-emerald-700 dark:text-emerald-400">45 دقيقة / يوم</span>
+
+              {/* Worship Minutes Counter */}
+              <div className="p-3 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-gray-700 dark:text-gray-300">⏱️ دقائق العبادة والتلاوة:</span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => updateHabits(h => ({ ...h, worshipMinutes: Math.max(5, h.worshipMinutes - 5) }))}
+                      className="w-6 h-6 rounded-lg bg-black/5 dark:bg-white/10 hover:bg-black/10 text-text-muted hover:text-text-main flex items-center justify-center font-bold text-xs cursor-pointer"
+                    >
+                      -
+                    </button>
+                    <span className="font-bold text-xs text-primary dark:text-primary-light min-w-[65px] text-center font-mono">
+                      {habits.worshipMinutes} دقيقة
+                    </span>
+                    <button
+                      onClick={() => updateHabits(h => ({ ...h, worshipMinutes: h.worshipMinutes + 5 }))}
+                      className="w-6 h-6 rounded-lg bg-black/5 dark:bg-white/10 hover:bg-black/10 text-text-muted hover:text-text-main flex items-center justify-center font-bold text-xs cursor-pointer"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                {/* Quick Minute Picks */}
+                <div className="flex gap-1.5 pt-1">
+                  {[15, 30, 45, 60].map(mins => (
+                    <button
+                      key={mins}
+                      onClick={() => updateHabits(h => ({ ...h, worshipMinutes: mins }))}
+                      className={`flex-1 py-1 text-[10px] rounded-lg font-bold transition-colors cursor-pointer ${
+                        habits.worshipMinutes === mins
+                          ? 'bg-primary text-white shadow-sm'
+                          : 'bg-black/5 dark:bg-white/5 text-text-muted hover:bg-black/10'
+                      }`}
+                    >
+                      {mins} د
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
-            <div className="flex gap-3">
-              <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { setShowStreakModal(false); navigate('/khatmah'); }}>
+            {/* Quick Action Navigation */}
+            <div className="flex gap-2.5 pt-1">
+              <Button className="w-full text-xs py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { setShowStreakModal(false); navigate('/khatmah'); }}>
                 متابعة الختمة 📖
               </Button>
-              <Button variant="secondary" className="w-full" onClick={() => { setShowStreakModal(false); navigate('/adhkar'); }}>
+              <Button variant="secondary" className="w-full text-xs py-2.5" onClick={() => { setShowStreakModal(false); navigate('/adhkar'); }}>
                 قراءة الأذكار 📿
               </Button>
             </div>

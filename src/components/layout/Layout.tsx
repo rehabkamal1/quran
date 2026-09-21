@@ -14,6 +14,7 @@ export const Layout: React.FC = () => {
   const { isPlaying, currentPrayerName, stopAdhan, adhanEnabled, audioUnlocked, unlockAudio } = useAdhan();
 
   React.useEffect(() => {
+    document.title = "هداية - منصة قرآنية";
     return notificationService.startReminderScheduler();
   }, []);
 
