@@ -73,7 +73,8 @@ const formatPrayerKey = (prayerDate: Date, prayerKeyName: string): string => {
 
 export const AdhanProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [adhanEnabled, setAdhanEnabled] = useState(() => {
-    return localStorage.getItem('adhan_enabled') === 'true';
+    const stored = localStorage.getItem('adhan_enabled');
+    return stored === null ? true : stored === 'true';
   });
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -170,7 +171,8 @@ export const AdhanProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const checkMissedOrDuePrayer = (timings: PrayerTimes) => {
-    const enabled = localStorage.getItem('adhan_enabled') === 'true';
+    const stored = localStorage.getItem('adhan_enabled');
+    const enabled = stored === null ? true : stored === 'true';
     if (!enabled) return;
 
     const now = new Date();
@@ -346,7 +348,8 @@ export const AdhanProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Monitor & Schedule prayer times on load & visibility change
   useEffect(() => {
     const fetchAndSchedule = async () => {
-      const enabled = localStorage.getItem('adhan_enabled') === 'true';
+      const stored = localStorage.getItem('adhan_enabled');
+      const enabled = stored === null ? true : stored === 'true';
       console.log(`[Adhan] enabled: ${enabled}`);
       console.log(`[Adhan] audio unlocked: ${audioUnlockedRef.current}`);
       if (!enabled) return;

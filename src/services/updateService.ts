@@ -12,12 +12,12 @@ export interface AppVersionInfo {
 }
 
 export const APP_CURRENT_VERSION: AppVersionInfo = {
-  version: '1.0.1',
-  versionCode: 2,
+  version: '1.0.2',
+  versionCode: 3,
   appName: 'هداية - منصة قرآنية',
-  releaseDate: '2026-09-21',
+  releaseDate: '2026-09-24',
   title: 'إصدار جديد متوفر للتطبيق ✨',
-  notes: 'تحديث مواقيت الصلاة لتتوافق 100% مع الهيئة المصرية العامة للمساحة، وتفعيل سجل المواظبة وتنبيهات الأذكار.',
+  notes: 'تشغيل صوت الأذان التلقائي في خلفية الأندرويد، حل مشاكل الاستجابة وتثبيت التطبيق على المتصفح.',
   apkDownloadUrl: 'https://github.com/rehabkamal1/quran/releases/download/apk-latest/app-release.apk',
   releaseUrl: 'https://github.com/rehabkamal1/quran/releases/tag/apk-latest'
 };

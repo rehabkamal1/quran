@@ -74,20 +74,26 @@ export const nativeNotificationService = {
   },
 
   /**
-   * Setup High-Priority Android Notification Channel for Adhan
+   * Setup High-Priority Android Notification Channel for Adhan with Custom Sound
    */
   setupChannel: async (): Promise<void> => {
     if (!Capacitor.isNativePlatform()) return;
     try {
+      // Remove old channel if it existed without sound
+      try {
+        await LocalNotifications.deleteChannel({ id: 'adhan_prayer_channel' });
+      } catch {}
+
       await LocalNotifications.createChannel({
-        id: 'adhan_prayer_channel',
+        id: 'adhan_prayer_channel_v2',
         name: 'أذان مواقيت الصلاة',
-        description: 'تنبيهات وأذان الصلوات الخمس اليومية بدقة في الخلفية',
+        description: 'تنبيهات وأذان الصلوات الخمس اليومية بصوت الأذان في الخلفية',
         importance: 5, // High priority
         visibility: 1, // Visible on lock screen
         vibration: true,
         lights: true,
         lightColor: '#C9A45C',
+        sound: 'adhan.mp3',
       });
     } catch (e) {
       console.warn('[NativeNotification] Error creating channel:', e);
@@ -153,7 +159,8 @@ export const nativeNotificationService = {
           at: scheduleDate,
           allowWhileIdle: true, // Wakes Android device even in Doze Mode!
         },
-        channelId: 'adhan_prayer_channel',
+        channelId: 'adhan_prayer_channel_v2',
+        sound: 'adhan.mp3',
         smallIcon: 'ic_stat_icon_config_sample',
         iconColor: '#C9A45C',
         extra: {
@@ -168,7 +175,7 @@ export const nativeNotificationService = {
         await LocalNotifications.schedule({
           notifications: notificationsToSchedule,
         });
-        console.log(`[NativeNotification] Scheduled ${notificationsToSchedule.length} prayer alarms in Android OS.`);
+        console.log(`[NativeNotification] Scheduled ${notificationsToSchedule.length} prayer alarms in Android OS with adhan sound.`);
         return notificationsToSchedule.length;
       } catch (e) {
         console.error('[NativeNotification] Error scheduling alarms:', e);
@@ -196,7 +203,7 @@ export const nativeNotificationService = {
   },
 
   /**
-   * Send an immediate test notification
+   * Send an immediate test notification with Adhan sound
    */
   sendTestNotification: async (): Promise<boolean> => {
     if (!Capacitor.isNativePlatform()) return false;
@@ -212,9 +219,10 @@ export const nativeNotificationService = {
           {
             id: 9999,
             title: 'اختبار أذان الصلاة 🕌',
-            body: 'تم ضبط وتفعيل نظام إشعارات الأذان بنجاح على هاتفك الأندرويد!',
+            body: 'تم ضبط وتفعيل نظام إشعارات الأذان بصوت الأذان بنجاح على هاتفك!',
             schedule: { at: new Date(Date.now() + 1000), allowWhileIdle: true },
-            channelId: 'adhan_prayer_channel',
+            channelId: 'adhan_prayer_channel_v2',
+            sound: 'adhan.mp3',
             smallIcon: 'ic_stat_icon_config_sample',
             iconColor: '#C9A45C',
           },

@@ -1,55 +1,72 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from './Card';
 import { Button } from './Button';
-import { X } from 'lucide-react';
+import { X, Share, PlusSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Capacitor } from '@capacitor/core';
 
 export const InstallPWA: React.FC = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showPrompt, setShowPrompt] = useState(false);
+  const [showIosInstructions, setShowIosInstructions] = useState(false);
 
   useEffect(() => {
+    // Never show PWA banner inside Capacitor Android APK
+    if (Capacitor.isNativePlatform()) {
+      return;
+    }
+
+    // Never show if already running as installed standalone app
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+    if (isStandalone) {
+      return;
+    }
+
     const handler = (e: Event) => {
-      // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
-      // Stash the event so it can be triggered later.
       setDeferredPrompt(e);
-      // Check if user has already dismissed it recently
+
+      // Check if user has dismissed it within the last 24 hours
       const dismissed = localStorage.getItem('pwa_prompt_dismissed');
-      if (!dismissed) {
+      const ONE_DAY = 24 * 60 * 60 * 1000;
+      const isDismissedRecently = dismissed && (Date.now() - parseInt(dismissed, 10) < ONE_DAY);
+
+      if (!isDismissedRecently) {
         setShowPrompt(true);
       }
     };
 
     window.addEventListener('beforeinstallprompt', handler);
 
+    // Support manual trigger from settings or buttons
+    const handleManualTrigger = () => {
+      setShowPrompt(true);
+    };
+    window.addEventListener('show-install-pwa', handleManualTrigger);
+
     return () => {
       window.removeEventListener('beforeinstallprompt', handler);
+      window.removeEventListener('show-install-pwa', handleManualTrigger);
     };
   }, []);
 
   const handleInstall = async () => {
-    if (!deferredPrompt) return;
-    
-    // Show the install prompt
-    deferredPrompt.prompt();
-    
-    // Wait for the user to respond to the prompt
-    const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-      console.log('User accepted the install prompt');
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setShowPrompt(false);
+      }
+      setDeferredPrompt(null);
     } else {
-      console.log('User dismissed the install prompt');
+      // Fallback instructions for browsers that don't support beforeinstallprompt
+      setShowIosInstructions(true);
     }
-    
-    setDeferredPrompt(null);
-    setShowPrompt(false);
   };
 
   const handleDismiss = () => {
     setShowPrompt(false);
-    // Don't show again for 7 days
+    // Don't show again for 24 hours
     localStorage.setItem('pwa_prompt_dismissed', Date.now().toString());
   };
 
@@ -77,16 +94,24 @@ export const InstallPWA: React.FC = () => {
               <div className="space-y-2">
                 <h3 className="font-bold text-lg leading-none">تثبيت تطبيق "هداية"</h3>
                 <p className="text-sm text-text-muted leading-relaxed">
-                  احصل على تجربة أفضل وبدون إنترنت بتثبيت المنصة على جهازك!
+                  احصل على تجربة أسرع وبدون إنترنت بتثبيت المنصة على جهازك!
                 </p>
-                <div className="flex gap-2 pt-2">
-                  <Button onClick={handleInstall} className="py-2 text-sm">
-                    تثبيت الآن
-                  </Button>
-                  <Button onClick={handleDismiss} variant="outline" className="py-2 text-sm">
-                    لاحقاً
-                  </Button>
-                </div>
+                {showIosInstructions ? (
+                  <div className="bg-primary/10 border border-primary/20 p-2.5 rounded-xl text-xs space-y-1 text-primary-dark dark:text-primary-light">
+                    <p className="font-bold">لتثبيت التطبيق يدوياً:</p>
+                    <p>1. اضغط على زر المشاركة <Share size={12} className="inline mx-1" /> في شريط المتصفح.</p>
+                    <p>2. اختر <strong>"إضافة إلى الشاشة الرئيسية"</strong> <PlusSquare size={12} className="inline mx-1" />.</p>
+                  </div>
+                ) : (
+                  <div className="flex gap-2 pt-2">
+                    <Button onClick={handleInstall} className="py-2 text-sm">
+                      تثبيت الآن
+                    </Button>
+                    <Button onClick={handleDismiss} variant="outline" className="py-2 text-sm">
+                      لاحقاً
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           </Card>
