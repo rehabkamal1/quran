@@ -740,15 +740,15 @@ export const Home: React.FC = () => {
 
       {/* Streak Modal (مواظبة تفاعلية قابلة للتعديل) */}
       {showStreakModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setShowStreakModal(false)}>
-          <div className="bg-white dark:bg-card-dark rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl border border-primary/20 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()} dir="rtl">
-            <div className="flex items-center justify-between border-b pb-4 border-gray-100 dark:border-gray-800">
+        <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 pb-20 sm:pb-4 animate-in fade-in duration-200" onClick={() => setShowStreakModal(false)}>
+          <div className="bg-white dark:bg-card-dark rounded-3xl max-w-md w-full p-4 sm:p-5 space-y-4 shadow-2xl border border-primary/20 max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()} dir="rtl">
+            <div className="flex items-center justify-between border-b pb-3 border-gray-100 dark:border-gray-800">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center font-bold text-xl shadow-lg shadow-emerald-500/30">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-emerald-500 text-white flex items-center justify-center font-bold text-lg sm:text-xl shadow-lg shadow-emerald-500/30 shrink-0">
                   🔥
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg text-gray-900 dark:text-white">سجل المواظبة اليومية</h3>
+                  <h3 className="font-bold text-base sm:text-lg text-gray-900 dark:text-white">سجل المواظبة اليومية</h3>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-xs text-text-muted">أنت مواظب منذ:</span>
                     <div className="flex items-center gap-1.5 bg-emerald-500/10 dark:bg-emerald-500/20 px-2 py-0.5 rounded-lg">
@@ -773,20 +773,20 @@ export const Home: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <button onClick={() => setShowStreakModal(false)} className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer">
+              <button onClick={() => setShowStreakModal(false)} className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer shrink-0">
                 ✕
               </button>
             </div>
 
             {/* Interactive Streak Grid */}
-            <div className="bg-black/[0.02] dark:bg-white/[0.02] p-3.5 rounded-2xl border border-black/5 dark:border-white/5 space-y-2">
+            <div className="bg-black/[0.02] dark:bg-white/[0.02] p-3 rounded-2xl border border-black/5 dark:border-white/5 space-y-2">
               <div className="flex items-center justify-between text-xs font-bold">
                 <span className="text-gray-700 dark:text-gray-300">أيام المواظبة الـ 14 الأخيرة:</span>
-                <span className="text-[11px] text-emerald-600 dark:text-emerald-400">
+                <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
                   {(habits?.completedDays || DEFAULT_DAILY_HABITS.completedDays).filter(Boolean).length} / 14 يوم مكتمل
                 </span>
               </div>
-              <div className="grid grid-cols-7 gap-2 text-center pt-1">
+              <div className="grid grid-cols-7 gap-1.5 sm:gap-2 text-center pt-1">
                 {(habits?.completedDays || DEFAULT_DAILY_HABITS.completedDays).map((isDone, i) => (
                   <button
                     key={i}
@@ -802,26 +802,28 @@ export const Home: React.FC = () => {
                       });
                     }}
                     className="flex flex-col items-center gap-1 group cursor-pointer"
-                    title={`يوم ${i + 1}: اضغط للتغيير`}
+                    title={`يوم ${i + 1}: اضغط للتبديل`}
                   >
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs transition-all ${
+                    <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center font-bold text-xs transition-all ${
                       isDone
-                        ? 'bg-emerald-500 text-white shadow-sm ring-2 ring-emerald-400/30 group-hover:scale-110'
+                        ? 'bg-emerald-500 text-white shadow-sm ring-2 ring-emerald-400/30 group-hover:scale-105'
                         : 'bg-black/5 dark:bg-white/10 text-text-muted hover:bg-emerald-500/20 group-hover:scale-105'
                     }`}>
                       {isDone ? '✓' : '—'}
                     </div>
-                    <span className="text-[10px] text-text-muted">يوم {i + 1}</span>
+                    <span className="text-[10px] text-text-muted font-mono leading-none">
+                      {i + 1}
+                    </span>
                   </button>
                 ))}
               </div>
-              <p className="text-[10px] text-text-muted text-center pt-1">
+              <p className="text-[10px] text-text-muted text-center pt-0.5">
                 💡 اضغط على أي يوم لتبديله بين مكتمل وغير مكتمل
               </p>
             </div>
 
             {/* Interactive Habits Toggles */}
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               <h4 className="text-xs font-bold text-text-muted px-1">مهام وإنجازات اليوم (اضغط للتعديل):</h4>
 
               {/* Quran Daily Reading Toggle */}
@@ -835,7 +837,7 @@ export const Home: React.FC = () => {
               >
                 <span className="text-xs font-bold flex items-center gap-2">
                   <span>📖</span>
-                  <span>الورد القرآي لليوم:</span>
+                  <span>الورد القرآني لليوم:</span>
                 </span>
                 <span className={`text-xs font-bold px-2.5 py-1 rounded-xl transition-all ${
                   habits.quranCompleted
@@ -850,7 +852,7 @@ export const Home: React.FC = () => {
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => updateHabits(h => ({ ...h, morningAdhkarCompleted: !h.morningAdhkarCompleted }))}
-                  className={`p-3 rounded-2xl border text-xs font-bold flex flex-col items-start gap-1 transition-all cursor-pointer ${
+                  className={`p-2.5 sm:p-3 rounded-2xl border text-xs font-bold flex flex-col items-start gap-1 transition-all cursor-pointer ${
                     habits.morningAdhkarCompleted
                       ? 'bg-amber-500/15 border-amber-500/40 text-amber-800 dark:text-amber-300'
                       : 'bg-black/5 dark:bg-white/5 border-transparent text-text-muted'
@@ -867,7 +869,7 @@ export const Home: React.FC = () => {
 
                 <button
                   onClick={() => updateHabits(h => ({ ...h, eveningAdhkarCompleted: !h.eveningAdhkarCompleted }))}
-                  className={`p-3 rounded-2xl border text-xs font-bold flex flex-col items-start gap-1 transition-all cursor-pointer ${
+                  className={`p-2.5 sm:p-3 rounded-2xl border text-xs font-bold flex flex-col items-start gap-1 transition-all cursor-pointer ${
                     habits.eveningAdhkarCompleted
                       ? 'bg-indigo-500/15 border-indigo-500/40 text-indigo-800 dark:text-indigo-300'
                       : 'bg-black/5 dark:bg-white/5 border-transparent text-text-muted'
@@ -926,11 +928,11 @@ export const Home: React.FC = () => {
             </div>
 
             {/* Quick Action Navigation */}
-            <div className="flex gap-2.5 pt-1">
-              <Button className="w-full text-xs py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { setShowStreakModal(false); navigate('/khatmah'); }}>
+            <div className="flex gap-2 pt-1 pb-1">
+              <Button className="w-full text-xs py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm" onClick={() => { setShowStreakModal(false); navigate('/khatmah'); }}>
                 متابعة الختمة 📖
               </Button>
-              <Button variant="secondary" className="w-full text-xs py-2.5" onClick={() => { setShowStreakModal(false); navigate('/adhkar'); }}>
+              <Button variant="secondary" className="w-full text-xs py-2.5 rounded-xl shadow-sm" onClick={() => { setShowStreakModal(false); navigate('/adhkar'); }}>
                 قراءة الأذكار 📿
               </Button>
             </div>
@@ -940,8 +942,8 @@ export const Home: React.FC = () => {
 
       {/* Ramadan Modal (رمضان - المناسبة القادمة) */}
       {showRamadanModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setShowRamadanModal(false)}>
-          <div className="bg-white dark:bg-card-dark rounded-3xl max-w-md w-full p-6 space-y-6 shadow-2xl border border-amber-500/30" onClick={(e) => e.stopPropagation()} dir="rtl">
+        <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 pb-20 sm:pb-4 animate-in fade-in duration-200" onClick={() => setShowRamadanModal(false)}>
+          <div className="bg-white dark:bg-card-dark rounded-3xl max-w-md w-full p-4 sm:p-6 space-y-5 shadow-2xl border border-amber-500/30 max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()} dir="rtl">
 
             <div className="flex items-center justify-between border-b pb-4 border-gray-100 dark:border-gray-800">
               <div className="flex items-center gap-3">

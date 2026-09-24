@@ -4,7 +4,7 @@ import { Button } from '../components/ui/Button';
 import { 
   Moon, Sun, Headphones, Globe, Trash2, Heart, ChevronLeft, BellRing, 
   Volume2, Smartphone, Download, Share2, MapPin, Compass, Check, AlertTriangle, 
-  BookOpen, Type, ShieldCheck, X, ArrowDownToLine, RefreshCw
+  BookOpen, Type, X, RefreshCw
 } from 'lucide-react';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { audioService, RECITERS } from '../services/audioService';
@@ -14,7 +14,6 @@ import { nativeNotificationService } from '../services/nativeNotificationService
 import { updateService } from '../services/updateService';
 import { useAdhan } from '../context/AdhanContext';
 import { useNavigate } from 'react-router-dom';
-import { storage } from '../services/storage';
 import { CITIES } from '../data/cities';
 
 const CALC_METHODS = [
@@ -280,31 +279,6 @@ export const Settings: React.FC = () => {
     } finally {
       setCheckingUpdate(false);
     }
-  };
-
-  const handleExportData = () => {
-    const exportObject = {
-      bookmarks: storage.getBookmarks(),
-      lastRead: storage.getLastRead(),
-      settings: {
-        reciter: selectedReciter,
-        city: selectedCity,
-        useLocation,
-        calcMethod,
-        quranFontSize,
-        adhanEnabled,
-      },
-      exportDate: new Date().toISOString(),
-    };
-
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObject, null, 2));
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `hedayah_backup_${new Date().toISOString().split('T')[0]}.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
-    showToast('تم تصدير ملف النسخة الاحتياطية بنجاح 💾');
   };
 
   const handleResetAllData = () => {
@@ -754,25 +728,25 @@ export const Settings: React.FC = () => {
 
           {/* Quran Font Size */}
           <div className="p-4 space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
                   <Type size={18} />
                 </div>
                 <div>
-                  <div className="font-bold text-sm">حجم خط الآيات القرآنية</div>
-                  <div className="text-xs text-text-muted">تخصيص حجم الخط أثناء تصفح المصحف</div>
+                  <div className="font-bold text-sm text-text-main dark:text-text-darkMain">حجم خط الآيات القرآنية</div>
+                  <div className="text-xs text-text-muted dark:text-text-darkMuted">تخصيص حجم الخط أثناء تصفح المصحف</div>
                 </div>
               </div>
-              <div className="flex items-center gap-1 bg-black/5 dark:bg-white/5 p-1 rounded-xl">
+              <div className="grid grid-cols-4 sm:flex items-center gap-1 bg-black/5 dark:bg-white/5 p-1 rounded-xl w-full sm:w-auto">
                 {QURAN_FONT_SIZES.map((f) => (
                   <button
                     key={f.id}
                     onClick={() => handleFontSizeChange(f.id)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-center cursor-pointer ${
                       quranFontSize === f.id
                         ? 'bg-primary text-white shadow-sm'
-                        : 'text-text-muted hover:text-text-main'
+                        : 'text-text-muted dark:text-text-darkMuted hover:text-text-main dark:hover:text-white'
                     }`}
                   >
                     {f.label}
@@ -783,7 +757,7 @@ export const Settings: React.FC = () => {
 
             {/* Live Verse Preview Box */}
             <div className="p-3 rounded-xl bg-primary/5 dark:bg-primary/10 border border-primary/15 text-center">
-              <p className="text-[11px] text-text-muted mb-1">معاينة مباشرة لحجم الخط:</p>
+              <p className="text-[11px] text-text-muted dark:text-text-darkMuted mb-1">معاينة مباشرة لحجم الخط:</p>
               <p className={`font-quran text-primary-dark dark:text-primary-light ${currentFontSizeObj.sizeClass}`}>
                 ﴿ اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ ﴾
               </p>
@@ -854,22 +828,22 @@ export const Settings: React.FC = () => {
           </div>
 
           {/* Check for updates row */}
-          <div className="flex items-center justify-between p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+              <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
                 <RefreshCw size={18} className={checkingUpdate ? 'animate-spin' : ''} />
               </div>
               <div>
-                <div className="font-bold text-sm flex items-center gap-2">
-                  <span>إصدار التطبيق والتحديثات</span>
+                <div className="font-bold text-sm flex items-center gap-2 flex-wrap">
+                  <span className="text-text-main dark:text-text-darkMain">إصدار التطبيق والتحديثات</span>
                   <span className="text-[10px] bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-bold px-2 py-0.5 rounded-full font-mono">
                     v{updateService.getCurrentVersion()}
                   </span>
                 </div>
-                <div className="text-xs text-text-muted">فحص التحديثات الجديدة للسيرفر وملف الـ APK</div>
+                <div className="text-xs text-text-muted dark:text-text-darkMuted">فحص التحديثات الجديدة لملف الـ APK</div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="self-end sm:self-auto">
               <Button
                 size="sm"
                 variant="outline"
@@ -880,61 +854,36 @@ export const Settings: React.FC = () => {
                 <RefreshCw size={14} className={checkingUpdate ? 'animate-spin' : ''} />
                 <span>{checkingUpdate ? 'جاري الفحص...' : 'فحص التحديثات'}</span>
               </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                className="text-xs font-bold gap-1 text-primary dark:text-primary-light"
-                onClick={() => window.dispatchEvent(new CustomEvent('open-update-modal'))}
-                title="معاينة نافذة التنبيه بالتحديث"
-              >
-                <span>تجربة النافذة 🧪</span>
-              </Button>
             </div>
           </div>
         </Card>
       </section>
 
       {/* ==========================================
-          SECTION 6: BACKUP & DATA
+          SECTION 6: DATA MANAGEMENT
       ========================================== */}
       <section className="space-y-3">
-        <h2 className="text-sm font-bold text-text-muted flex items-center gap-2 px-1">
-          <ShieldCheck size={16} className="text-primary" />
-          <span>البيانات والنسخ الاحتياطي</span>
+        <h2 className="text-sm font-bold text-text-muted dark:text-text-darkMuted flex items-center gap-2 px-1">
+          <Trash2 size={16} className="text-red-500" />
+          <span>إدارة البيانات وضبط المصنع</span>
         </h2>
 
-        <Card className="divide-y divide-black/5 dark:divide-white/5 p-0 rounded-2xl overflow-hidden">
-          {/* Export Bookmarks */}
-          <div className="flex items-center justify-between p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                <ArrowDownToLine size={18} />
-              </div>
-              <div>
-                <div className="font-bold text-sm">تصدير نسخة احتياطية</div>
-                <div className="text-xs text-text-muted">حفظ آياتك وسورك المحفوظة وإعداداتك في ملف خارجي</div>
-              </div>
-            </div>
-            <Button size="sm" variant="outline" className="text-xs font-bold border-primary/30" onClick={handleExportData}>
-              تصدير JSON 💾
-            </Button>
-          </div>
-
+        <Card className="p-0 rounded-2xl overflow-hidden">
           {/* Reset All Data */}
-          <div className="flex items-center justify-between p-4 bg-red-50/50 dark:bg-red-950/15">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-3 bg-red-50/50 dark:bg-red-950/15">
             <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
-              <div className="w-9 h-9 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center">
+              <div className="w-9 h-9 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center shrink-0">
                 <Trash2 size={18} />
               </div>
               <div>
                 <div className="font-bold text-sm">استعادة ضبط المصنع</div>
-                <div className="text-xs text-text-muted">مسح كافة المحفوظات، سجل القراءة، والإعدادات المخصصة</div>
+                <div className="text-xs text-text-muted dark:text-text-darkMuted">مسح كافة المحفوظات، سجل القراءة، والإعدادات المخصصة</div>
               </div>
             </div>
             <Button 
               variant="outline" 
               size="sm" 
-              className="border-red-500/50 text-red-500 hover:bg-red-500 hover:text-white text-xs font-bold"
+              className="border-red-500/50 text-red-500 hover:bg-red-500 hover:text-white text-xs font-bold self-end sm:self-auto"
               onClick={() => setShowResetConfirmModal(true)}
             >
               حذف البيانات
