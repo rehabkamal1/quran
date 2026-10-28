@@ -6,6 +6,7 @@ import { useDarkMode } from '../../hooks/useDarkMode';
 import { InstallPWA } from '../ui/InstallPWA';
 import { AdhkarPromptModal } from '../ui/AdhkarPromptModal';
 import { UpdatePromptModal } from '../ui/UpdatePromptModal';
+import { DhikrToast } from '../ui/DhikrToast';
 import { useAdhan } from '../../context/AdhanContext';
 import { notificationService } from '../../services/notificationService';
 
@@ -39,6 +40,7 @@ export const Layout: React.FC = () => {
       <InstallPWA />
       <AdhkarPromptModal />
       <UpdatePromptModal />
+      <DhikrToast />
 
       {/* Audio Unlock Banner after Page Reload */}
       {adhanEnabled && !audioUnlocked && (

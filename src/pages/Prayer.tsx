@@ -9,6 +9,7 @@ import { useAdhan } from '../context/AdhanContext';
 
 import { CITIES, findCity } from '../data/cities';
 import { CALC_METHODS_CONFIG } from '../services/prayerApi';
+import { getMuezzinById } from '../data/muezzins';
 
 const parsePrayerTime = (timeStr: string, date: Date = new Date()): Date => {
   const [hours, minutes] = timeStr.split(':').map(Number);
@@ -28,7 +29,8 @@ export const Prayer: React.FC = () => {
     return findCity(cityId);
   });
 
-  const { adhanEnabled, toggleAdhan } = useAdhan();
+  const { adhanEnabled, toggleAdhan, isPlaying, playTestAdhan, stopAdhan } = useAdhan();
+  const currentMuezzin = getMuezzinById();
   const [nextPrayer, setNextPrayer] = useState<{ name: string; timeLeft: string; progress: number } | null>(null);
 
   // Try fetching by location or fallback to city (caching coordinates to avoid prompt on page load)
@@ -247,28 +249,60 @@ export const Prayer: React.FC = () => {
       </div>
 
       {/* Adhan Toggle Control Card */}
-      <Card className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 bg-black/5 dark:bg-white/5 border-transparent gap-4">
-        <div className="space-y-1 flex-1">
-          <div className="flex items-center gap-2">
-            {adhanEnabled ? (
-              <Volume2 className="text-primary dark:text-primary-light" size={24} />
-            ) : (
-              <VolumeX className="text-text-muted" size={24} />
-            )}
-            <h3 className="font-bold text-lg">تنبيه صوت الأذان</h3>
+      <Card className="p-6 bg-black/5 dark:bg-white/5 border-transparent space-y-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="space-y-1 flex-1">
+            <div className="flex items-center gap-2">
+              {adhanEnabled ? (
+                <Volume2 className="text-primary dark:text-primary-light" size={24} />
+              ) : (
+                <VolumeX className="text-text-muted" size={24} />
+              )}
+              <h3 className="font-bold text-lg">تنبيه صوت الأذان</h3>
+            </div>
+            <p className="text-sm text-text-muted">
+              تشغيل الأذان تلقائياً عند دخول وقت الصلاة وإرسال إشعار الهاتف.
+            </p>
           </div>
-          <p className="text-sm text-text-muted">
-            تشغيل الأذان تلقائياً عند دخول وقت الصلاة (إذا كان التطبيق مفتوحاً).
-          </p>
+          <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
+            <div dir="ltr">
+              <button 
+                onClick={toggleAdhan} 
+                className={`w-14 h-8 rounded-full p-1 transition-colors duration-300 ${adhanEnabled ? 'bg-primary dark:bg-primary-light' : 'bg-black/20 dark:bg-white/20'}`}
+              >
+                <div className={`bg-white dark:bg-background-dark w-6 h-6 rounded-full shadow-md transform transition-transform duration-300 ${adhanEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
+              </button>
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
-          <div dir="ltr">
-            <button 
-              onClick={toggleAdhan} 
-              className={`w-14 h-8 rounded-full p-1 transition-colors duration-300 ${adhanEnabled ? 'bg-primary dark:bg-primary-light' : 'bg-black/20 dark:bg-white/20'}`}
-            >
-              <div className={`bg-white dark:bg-background-dark w-6 h-6 rounded-full shadow-md transform transition-transform duration-300 ${adhanEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
-            </button>
+
+        {/* Adhan Test & Muezzin Voice Quick Control */}
+        <div className="border-t border-black/10 dark:border-white/10 pt-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="text-xs text-text-muted flex items-center gap-1.5">
+            <span>المؤذن المختار:</span>
+            <span className="font-bold text-primary dark:text-primary-light">{currentMuezzin.name}</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {isPlaying ? (
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={stopAdhan}
+                className="text-xs gap-1.5 border-red-500/40 text-red-600 dark:text-red-400 hover:bg-red-500/10"
+              >
+                <span>⏹️ إيقاف صوت الأذان</span>
+              </Button>
+            ) : (
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={() => playTestAdhan()}
+                className="text-xs gap-1.5 border-primary/40 text-primary dark:text-primary-light hover:bg-primary/10"
+              >
+                <span>▶️ استماع للأذان الآن (تجربة الصوت)</span>
+              </Button>
+            )}
           </div>
         </div>
       </Card>

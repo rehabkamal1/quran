@@ -11,6 +11,7 @@ import { audioService, RECITERS } from '../services/audioService';
 import { notificationService } from '../services/notificationService';
 import { backgroundNotificationService } from '../services/backgroundNotificationService';
 import { nativeNotificationService } from '../services/nativeNotificationService';
+import { dhikrReminderService } from '../services/dhikrReminderService';
 import { updateService } from '../services/updateService';
 import { useAdhan } from '../context/AdhanContext';
 import { useNavigate } from 'react-router-dom';
@@ -48,6 +49,11 @@ export const Settings: React.FC = () => {
   const [selectedMuezzin, setSelectedMuezzin] = useState(() => localStorage.getItem('adhan_muezzin_voice') || 'makkah');
   const [testAudioPlaying, setTestAudioPlaying] = useState(false);
   const [audioPlayerInstance, setAudioPlayerInstance] = useState<HTMLAudioElement | null>(null);
+
+  // Periodic Dhikr & Salawat settings
+  const [dhikrEnabled, setDhikrEnabled] = useState(() => dhikrReminderService.isEnabled());
+  const [dhikrInterval, setDhikrInterval] = useState(() => dhikrReminderService.getIntervalMinutes());
+  const [dhikrVoice, setDhikrVoice] = useState(() => dhikrReminderService.isVoiceEnabled());
 
   // Individual prayer toggles
   const [prayerToggles, setPrayerToggles] = useState(() => {
@@ -229,6 +235,31 @@ export const Settings: React.FC = () => {
         alert('يرجى السماح بالإشعارات في المتصفح أولاً.');
       }
     }
+  };
+
+  const handleToggleDhikr = async () => {
+    const next = !dhikrEnabled;
+    setDhikrEnabled(next);
+    await dhikrReminderService.setEnabled(next);
+    showToast(next ? 'تم تفعيل التذكير بالصلاة على النبي والأذكار' : 'تم إيقاف التذكير بالأذكار');
+  };
+
+  const handleChangeDhikrInterval = async (val: number) => {
+    setDhikrInterval(val);
+    await dhikrReminderService.setIntervalMinutes(val);
+    const label = val === 60 ? 'ساعة' : val === 30 ? '30 دقيقة' : `${val / 60} ساعات`;
+    showToast(`تم ضبط التكرار: كل ${label}`);
+  };
+
+  const handleToggleDhikrVoice = (val: boolean) => {
+    setDhikrVoice(val);
+    dhikrReminderService.setVoiceEnabled(val);
+    showToast(val ? 'تم تفعيل الصوت والنطق بالذكر' : 'تم إيقاف الصوت والنطق');
+  };
+
+  const handleTestDhikrNow = () => {
+    dhikrReminderService.triggerDhikr();
+    showToast('تم إرسال إشعار وتجربة صوت الذكر الآن ✨');
   };
 
   const handleFontSizeChange = (sizeId: string) => {
@@ -691,6 +722,95 @@ export const Settings: React.FC = () => {
               </Button>
             </div>
           </div>
+        </Card>
+
+        {/* Periodic Dhikr & Salawat Card */}
+        <Card className="p-4 space-y-4 rounded-2xl border-primary/20 shadow-sm bg-gradient-to-br from-primary/5 via-transparent to-amber-500/5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary dark:text-primary-light flex items-center justify-center font-bold text-lg">
+                🌸
+              </div>
+              <div>
+                <div className="font-bold text-sm text-text-primary dark:text-text-dark">
+                  التذكير الدوري بالصلاة على النبي ﷺ والأذكار
+                </div>
+                <div className="text-xs text-text-muted">
+                  إشعار صوتي وكتابي متكرر لتعطير لسانك بذكر الله والصلاة على الحبيب
+                </div>
+              </div>
+            </div>
+            <Button 
+              variant={dhikrEnabled ? "primary" : "outline"} 
+              size="sm" 
+              onClick={handleToggleDhikr}
+              className="text-xs font-bold"
+            >
+              {dhikrEnabled ? 'مفعّل ✓' : 'إيقاف'}
+            </Button>
+          </div>
+
+          {dhikrEnabled && (
+            <div className="border-t border-black/5 dark:border-white/5 pt-3 space-y-3">
+              {/* Interval Selection */}
+              <div>
+                <span className="text-xs font-bold text-text-muted block mb-2">تكرار الإشعار كل:</span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { value: 30, label: '30 دقيقة' },
+                    { value: 60, label: 'ساعة واحدة (موصى به)' },
+                    { value: 120, label: 'ساعتين' },
+                    { value: 180, label: '3 ساعات' }
+                  ].map(option => (
+                    <button
+                      key={option.value}
+                      onClick={() => handleChangeDhikrInterval(option.value)}
+                      className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border ${
+                        dhikrInterval === option.value
+                          ? 'bg-primary text-white border-primary shadow-sm'
+                          : 'bg-black/[0.03] dark:bg-white/5 border-transparent text-text-muted hover:border-primary/30'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Voice and Audio Chime Toggle */}
+              <div className="flex items-center justify-between pt-1">
+                <div>
+                  <div className="text-xs font-bold text-text-main dark:text-text-darkMain">
+                    الصوت والتنبيه الصوتي
+                  </div>
+                  <div className="text-[11px] text-text-muted">
+                    تشغيل نغمة تنبيه هادئة والنطق بالصلاة على النبي عند وصول الإشعار
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant={dhikrVoice ? "primary" : "outline"}
+                  className="text-xs py-1"
+                  onClick={() => handleToggleDhikrVoice(!dhikrVoice)}
+                >
+                  {dhikrVoice ? 'مفعّل 🔊' : 'صامت 🔕'}
+                </Button>
+              </div>
+
+              {/* Quick Test Button */}
+              <div className="border-t border-black/5 dark:border-white/5 pt-3 flex items-center justify-between">
+                <span className="text-xs text-text-muted">تجربة الإشعار والصوت الآن:</span>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="text-xs gap-1.5 border-primary/40 text-primary dark:text-primary-light hover:bg-primary/10"
+                  onClick={handleTestDhikrNow}
+                >
+                  <span>🔔 إرسال ذكر وسماع الصوت</span>
+                </Button>
+              </div>
+            </div>
+          )}
         </Card>
       </section>
 

@@ -1,6 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import type { PrayerTimes } from './prayerApi';
+import { dhikrReminderService } from './dhikrReminderService';
 
 export interface PrayerNotificationConfig {
   fajr: boolean;
@@ -38,6 +39,8 @@ const PRAYER_IDS: Record<string, number> = {
   Isha: 106,
 };
 
+export const ADHAN_CHANNEL_ID = 'adhan_prayer_channel_v3';
+
 export const nativeNotificationService = {
   /**
    * Check if running on Android/iOS native platform via Capacitor
@@ -74,27 +77,32 @@ export const nativeNotificationService = {
   },
 
   /**
-   * Setup High-Priority Android Notification Channel for Adhan with Custom Sound
+   * Setup High-Priority Android Notification Channels for Adhan and Dhikr
    */
   setupChannel: async (): Promise<void> => {
     if (!Capacitor.isNativePlatform()) return;
     try {
-      // Remove old channel if it existed without sound
+      // Remove old channels if they existed without sound
       try {
         await LocalNotifications.deleteChannel({ id: 'adhan_prayer_channel' });
+        await LocalNotifications.deleteChannel({ id: 'adhan_prayer_channel_v2' });
       } catch {}
 
+      // Adhan Notification Channel
       await LocalNotifications.createChannel({
-        id: 'adhan_prayer_channel_v2',
+        id: ADHAN_CHANNEL_ID,
         name: 'أذان مواقيت الصلاة',
         description: 'تنبيهات وأذان الصلوات الخمس اليومية بصوت الأذان في الخلفية',
-        importance: 5, // High priority
+        importance: 5, // High priority (heads-up popup + sound)
         visibility: 1, // Visible on lock screen
         vibration: true,
         lights: true,
         lightColor: '#C9A45C',
         sound: 'adhan.mp3',
       });
+
+      // Dhikr and Salawat Channel
+      await dhikrReminderService.setupNativeChannel();
     } catch (e) {
       console.warn('[NativeNotification] Error creating channel:', e);
     }
@@ -159,7 +167,7 @@ export const nativeNotificationService = {
           at: scheduleDate,
           allowWhileIdle: true, // Wakes Android device even in Doze Mode!
         },
-        channelId: 'adhan_prayer_channel_v2',
+        channelId: ADHAN_CHANNEL_ID,
         sound: 'adhan.mp3',
         smallIcon: 'ic_stat_icon_config_sample',
         iconColor: '#C9A45C',
@@ -176,13 +184,15 @@ export const nativeNotificationService = {
           notifications: notificationsToSchedule,
         });
         console.log(`[NativeNotification] Scheduled ${notificationsToSchedule.length} prayer alarms in Android OS with adhan sound.`);
-        return notificationsToSchedule.length;
       } catch (e) {
         console.error('[NativeNotification] Error scheduling alarms:', e);
       }
     }
 
-    return 0;
+    // Also schedule periodic dhikr reminders
+    await dhikrReminderService.scheduleNativeReminders();
+
+    return notificationsToSchedule.length;
   },
 
   /**
@@ -221,7 +231,7 @@ export const nativeNotificationService = {
             title: 'اختبار أذان الصلاة 🕌',
             body: 'تم ضبط وتفعيل نظام إشعارات الأذان بصوت الأذان بنجاح على هاتفك!',
             schedule: { at: new Date(Date.now() + 1000), allowWhileIdle: true },
-            channelId: 'adhan_prayer_channel_v2',
+            channelId: ADHAN_CHANNEL_ID,
             sound: 'adhan.mp3',
             smallIcon: 'ic_stat_icon_config_sample',
             iconColor: '#C9A45C',
@@ -235,4 +245,3 @@ export const nativeNotificationService = {
     }
   },
 };
-

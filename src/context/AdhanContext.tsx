@@ -2,6 +2,9 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { prayerApi } from '../services/prayerApi';
 import type { PrayerTimes } from '../services/prayerApi';
 import { nativeNotificationService } from '../services/nativeNotificationService';
+import { findCity } from '../data/cities';
+import { getMuezzinById } from '../data/muezzins';
+import { dhikrReminderService } from '../services/dhikrReminderService';
 
 export interface NextPrayerInfo {
   name: string;
@@ -22,9 +25,6 @@ interface AdhanContextType {
 }
 
 const AdhanContext = createContext<AdhanContextType | undefined>(undefined);
-
-import { findCity } from '../data/cities';
-import { getMuezzinAudioUrl, getMuezzinById } from '../data/muezzins';
 
 export const parsePrayerMinutes = (timeStr: string): number | null => {
   if (!timeStr || typeof timeStr !== 'string') return null;
@@ -96,9 +96,8 @@ export const AdhanProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [audioUnlocked]);
 
   const getAudioElement = (): HTMLAudioElement => {
-    const audioUrl = getMuezzinAudioUrl();
     if (!audioRef.current) {
-      const audio = new Audio(audioUrl);
+      const audio = new Audio();
       audio.preload = 'auto';
       audioRef.current = audio;
     }
@@ -110,57 +109,90 @@ export const AdhanProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       const audio = getAudioElement();
       audio.muted = true;
-      audio.currentTime = 0;
-      await audio.play();
+      audio.volume = 1.0;
+      await audio.play().catch(() => {});
       audio.pause();
       audio.muted = false;
       audio.currentTime = 0;
       setAudioUnlocked(true);
       console.log('[Adhan] audio unlocked: true');
     } catch (err: any) {
-      console.warn('[Adhan] audio unlocked: false (User gesture failed):', err?.name, err?.message);
-      setAudioUnlocked(false);
+      console.warn('[Adhan] audio unlocked attempt:', err?.name, err?.message);
     }
   };
 
-  const playAdhan = (prayerName: string = '') => {
-    console.log(`[Adhan] enabled: ${adhanEnabledRef.current}`);
-    console.log(`[Adhan] audio unlocked: ${audioUnlockedRef.current}`);
+  // Automatically unlock audio on first interaction anywhere in the app
+  useEffect(() => {
+    const handleFirstGesture = () => {
+      unlockAudio();
+    };
+
+    window.addEventListener('click', handleFirstGesture, { passive: true, once: true });
+    window.addEventListener('touchstart', handleFirstGesture, { passive: true, once: true });
+    window.addEventListener('keydown', handleFirstGesture, { passive: true, once: true });
+
+    return () => {
+      window.removeEventListener('click', handleFirstGesture);
+      window.removeEventListener('touchstart', handleFirstGesture);
+      window.removeEventListener('keydown', handleFirstGesture);
+    };
+  }, []);
+
+  // Initialize Dhikr foreground periodic reminders
+  useEffect(() => {
+    const cleanupDhikr = dhikrReminderService.startForegroundScheduler();
+
+    if (nativeNotificationService.isNative()) {
+      dhikrReminderService.scheduleNativeReminders();
+    }
+
+    return () => {
+      cleanupDhikr();
+    };
+  }, []);
+
+  const playAdhan = async (prayerName: string = '') => {
     console.log(`[Adhan] attempting playback for: ${prayerName}`);
 
-    const audioUrl = getMuezzinAudioUrl();
-    console.log(`[Adhan] playing muezzin audio URL: ${audioUrl}`);
+    const chosenMuezzin = getMuezzinById();
+    const primaryUrl = chosenMuezzin.url.startsWith('/') 
+      ? `${window.location.origin}${chosenMuezzin.url}` 
+      : chosenMuezzin.url;
+    const backupUrl = chosenMuezzin.backupUrl || 'https://raw.githubusercontent.com/Kiwifu/adhan-mp3/main/Ali_Ibn_Ahmad_Mala_HQ.mp3';
 
     const audio = getAudioElement();
     audio.pause();
     audio.currentTime = 0;
-    audio.src = audioUrl;
-    setIsPlaying(true);
-    setCurrentPrayerName(prayerName);
+    audio.muted = false;
+    audio.volume = 1.0;
+    audio.src = primaryUrl;
+    audio.load();
 
-    const playPromise = audio.play();
-    if (playPromise !== undefined) {
-      playPromise
-        .then(() => {
-          console.log(`[Adhan] audio.play SUCCESS for ${prayerName} (${audioUrl}) at ${new Date().toLocaleTimeString()}`);
-        })
-        .catch((err: any) => {
-          console.error(`[Adhan] audio.play FAILED for ${prayerName}`);
-          console.error(`Error name: ${err?.name || 'Unknown'}`);
-          console.error(`Error message: ${err?.message || 'Failed to play'}`);
-          
-          // Fallback to default adhan if custom voice fails
-          if (!audioUrl.endsWith('/audio/adhan.mp3')) {
-            console.warn('[Adhan] Attempting fallback to /audio/adhan.mp3');
-            audio.src = '/audio/adhan.mp3';
-            audio.play().catch(fallbackErr => {
-              console.error('[Adhan] Fallback also failed:', fallbackErr);
-              setIsPlaying(false);
-            });
-          } else {
-            setIsPlaying(false);
-          }
-        });
+    setIsPlaying(true);
+    setCurrentPrayerName(prayerName || chosenMuezzin.name);
+
+    try {
+      await audio.play();
+      console.log(`[Adhan] audio.play SUCCESS for ${prayerName} (${primaryUrl})`);
+    } catch (err: any) {
+      console.warn(`[Adhan] Primary play failed for ${prayerName}, trying backup CDN:`, err?.message);
+      try {
+        audio.src = backupUrl;
+        audio.load();
+        await audio.play();
+        console.log(`[Adhan] Backup audio.play SUCCESS for ${prayerName}`);
+      } catch (backupErr: any) {
+        console.error(`[Adhan] Both primary and backup playback failed:`, backupErr);
+        // Fallback to default local adhan
+        try {
+          audio.src = `${window.location.origin}/audio/adhan.mp3`;
+          audio.load();
+          await audio.play();
+        } catch {
+          setIsPlaying(false);
+          setCurrentPrayerName('');
+        }
+      }
     }
 
     audio.onended = () => {
@@ -191,13 +223,13 @@ export const AdhanProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (!pDate) continue;
 
       const diffMs = now.getTime() - pDate.getTime();
-      // If prayer occurred in the last 30 minutes (0 to 30 mins ago)
-      if (diffMs >= 0 && diffMs <= 30 * 60 * 1000) {
+      // If prayer occurred in the last 20 minutes (0 to 20 mins ago)
+      if (diffMs >= 0 && diffMs <= 20 * 60 * 1000) {
         const playKey = formatPrayerKey(pDate, p.key);
         const alreadyPlayed = localStorage.getItem('last_played_adhan_key') === playKey;
 
         if (!alreadyPlayed) {
-          console.log(`[Adhan] 🎯 Due/Missed Prayer Detected: ${p.name} (${p.time}) - Diff: ${Math.round(diffMs / 1000)}s ago - Key: ${playKey}`);
+          console.log(`[Adhan] 🎯 Due/Missed Prayer Detected: ${p.name} (${p.time}) - Key: ${playKey}`);
           localStorage.setItem('last_played_adhan_key', playKey);
 
           if (adhanEnabledRef.current) {
@@ -268,7 +300,6 @@ export const AdhanProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setNextPrayerInfo({ name: upcoming.name, time: upcoming.timeStr, msRemaining });
 
     console.log(`[Adhan] next prayer: ${upcoming.name} (${upcoming.timeStr}) on ${upcomingPlayKey}`);
-    console.log(`[Adhan] scheduled in: ${msRemaining} ms`);
 
     scheduledTimeoutRef.current = setTimeout(() => {
       console.log(`[Adhan] Scheduled timeout fired for ${upcoming!.name} (${upcomingPlayKey})!`);
@@ -350,8 +381,6 @@ export const AdhanProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const fetchAndSchedule = async () => {
       const stored = localStorage.getItem('adhan_enabled');
       const enabled = stored === null ? true : stored === 'true';
-      console.log(`[Adhan] enabled: ${enabled}`);
-      console.log(`[Adhan] audio unlocked: ${audioUnlockedRef.current}`);
       if (!enabled) return;
 
       const useLocation = localStorage.getItem('prayer_use_location') !== 'false';
@@ -386,7 +415,6 @@ export const AdhanProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
 
         if (!timings) {
-          console.log(`[Adhan] 📍 Fetching fresh prayer timings for ${city.name} (${calcMethod} - Egyptian Survey)...`);
           if (useLocation && cachedLat && cachedLng) {
             timings = await prayerApi.getTimingsByCoordinates(Number(cachedLat), Number(cachedLng), calcMethod, asrMethod);
           } else {
@@ -421,7 +449,6 @@ export const AdhanProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const onForeground = () => {
       if (document.visibilityState === 'visible' && timingsRef.current) {
-        console.log('[Adhan] Page foreground event, checking missed prayers & re-syncing schedule...');
         scheduleNextPrayer(timingsRef.current);
       }
     };

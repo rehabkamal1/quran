@@ -1,10 +1,10 @@
 {
-  "version": "1.0.2",
-  "versionCode": 3,
+  "version": "1.0.3",
+  "versionCode": 4,
   "appName": "هداية - منصة قرآنية",
-  "releaseDate": "2026-09-24",
+  "releaseDate": "2026-10-28",
   "title": "إصدار جديد متوفر للتطبيق ✨",
-  "notes": "تشغيل صوت الأذان التلقائي في خلفية الأندرويد، حل مشاكل الاستجابة وتثبيت التطبيق على المتصفح.",
+  "notes": "إضافة التذكير الصوتي والكتابي الدوري بالصلاة على النبي والأذكار، وإصلاح تشغيل صوت الأذان داخل التطبيق وفي الخلفية.",
   "apkDownloadUrl": "https://github.com/rehabkamal1/quran/releases/download/apk-latest/app-release.apk",
   "releaseUrl": "https://github.com/rehabkamal1/quran/releases/tag/apk-latest"
 }
